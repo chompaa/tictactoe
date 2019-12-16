@@ -14,28 +14,8 @@
   margin: 0 !important;
 }
 
-.game-title {
-  padding: 1rem;
-  width: 18rem;
-}
-
-.board-actions {
-  display: flex;
-  padding: 1rem;
-  justify-content: space-between;
-}
-
-.input {
-  width: 9rem;
-}
-
 .button {
   width: 8rem;
-}
-
-.connect {
-  padding-left: 0.5rem;
-  padding-right: 0.125rem;
 }
 
 .board-paper {
