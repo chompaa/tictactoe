@@ -164,7 +164,8 @@ const Board = () => {
       }
     });
 
-    if (squares.every(square => square)) return setState(states.DRAW);
+    if (squares.every(square => square))
+      return setState(state => (state === states.WINNER ? state : states.DRAW));
   }, [squares, player.symbol, states.WINNER, states.DRAW]);
 
   /*renderSquare(rowIndex * 3 + colIndex)*/
