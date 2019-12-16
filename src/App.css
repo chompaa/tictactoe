@@ -1,0 +1,71 @@
+.App {
+  font-family: Roboto, Verdana;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+.grid-container {
+  width: 100vw !important;
+  margin: 0 !important;
+}
+
+.game-title {
+  padding: 1rem;
+  width: 18rem;
+}
+
+.board-actions {
+  display: flex;
+  padding: 1rem;
+  justify-content: space-between;
+}
+
+.input {
+  width: 9rem;
+}
+
+.button {
+  width: 8rem;
+}
+
+.connect {
+  padding-left: 0.5rem;
+  padding-right: 0.125rem;
+}
+
+.board-paper {
+  display: inline-block;
+  padding: 1rem;
+}
+
+.board {
+  border-collapse: collapse;
+  margin: 0 auto;
+  cursor: pointer;
+  clear: both;
+}
+
+td {
+  width: 10rem;
+  height: 10rem;
+}
+
+.bottom {
+  border-bottom: 0.4rem solid #f0f0f0;
+}
+
+.right {
+  border-right: 0.4rem solid #f0f0f0;
+}
+
+@media only screen and (max-width: 425px) {
+  td {
+    width: 5rem;
+    height: 5rem;
+  }
+}
