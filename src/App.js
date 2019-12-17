@@ -213,7 +213,7 @@ const Board = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShareDialog(true)} color="primary">
+          <Button onClick={() => setShareDialog(false)} color="primary">
             Cancel
           </Button>
           <Button
