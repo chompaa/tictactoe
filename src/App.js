@@ -36,9 +36,10 @@ const Board = () => {
 
   const states = {
     NOT_CONNECTED: 0,
-    CONNECTED: 1,
-    WINNER: 2,
-    DRAW: 3
+    OPEN: 1,
+    CONNECTED: 2,
+    WINNER: 3,
+    DRAW: 4
   };
 
   const [state, setState] = useState(states.NOT_CONNECTED);
@@ -47,7 +48,7 @@ const Board = () => {
   });
   const [squares, setSquares] = useState(Array.from({ length: 9 }));
   const [connId, setConnId] = useState(null);
-  const [move, setMove] = useState(symbols.PLAYER_X);
+  const [move, setMove] = useState(symbols.PLAYER_O);
   const [connDialog, setConnDialog] = useState(false);
   const [shareDialog, setShareDialog] = useState(false);
   let idField;
@@ -67,27 +68,6 @@ const Board = () => {
   const handleCloseShareDialog = () => {
     setShareDialog(false);
   };
-
-  player.peer.on("open", id => {
-    console.log("ID", id);
-    setPlayer({
-      ...player,
-      id: id,
-      symbol: symbols.PLAYER_X
-    });
-    player.peer.on("connection", conn => {
-      setState(states.CONNECTED);
-      setConnId(conn.peer);
-      setPlayer(player => ({
-        ...player,
-        conn: conn
-      }));
-
-      conn.on("data", data => {
-        handleFakeClick(data, symbols.PLAYER_O);
-      });
-    });
-  });
 
   const connect = () => {
     handleCloseConnDialog();
@@ -115,10 +95,6 @@ const Board = () => {
         return squareIndex === index ? symbol : squareValue;
       })
     );
-
-    setMove(move =>
-      move === symbols.PLAYER_X ? symbols.PLAYER_O : symbols.PLAYER_X
-    );
   };
 
   const handleClick = index => {
@@ -129,16 +105,28 @@ const Board = () => {
     player.conn.send(index);
   };
 
-  const renderSquare = (index, border) => {
-    let value = squares[index];
-    return (
-      <SquareContext.Provider
-        key={index}
-        value={{ handleClick, value, index, border, symbols }}>
-        <Square></Square>
-      </SquareContext.Provider>
-    );
-  };
+  useEffect(() => {
+    player.peer.on("open", id => {
+      console.log("ID", id);
+      setPlayer(player => ({
+        ...player,
+        id: id,
+        symbol: symbols.PLAYER_X
+      }));
+      player.peer.on("connection", conn => {
+        setState(states.CONNECTED);
+        setConnId(conn.peer);
+        setPlayer(player => ({
+          ...player,
+          conn: conn
+        }));
+
+        conn.on("data", data => {
+          handleFakeClick(data, symbols.PLAYER_O);
+        });
+      });
+    });
+  }, [player.peer, states.CONNECTED, symbols.PLAYER_X, symbols.PLAYER_O]);
 
   useEffect(() => {
     [
@@ -166,9 +154,22 @@ const Board = () => {
 
     if (squares.every(square => square))
       return setState(state => (state === states.WINNER ? state : states.DRAW));
-  }, [squares, player.symbol, states.WINNER, states.DRAW]);
 
-  /*renderSquare(rowIndex * 3 + colIndex)*/
+    setMove(move =>
+      move === symbols.PLAYER_X ? symbols.PLAYER_O : symbols.PLAYER_X
+    );
+  }, [squares, states.WINNER, states.DRAW, symbols.PLAYER_X, symbols.PLAYER_O]);
+
+  const renderSquare = (index, border) => {
+    let value = squares[index];
+    return (
+      <SquareContext.Provider
+        key={index}
+        value={{ handleClick, value, index, border, symbols }}>
+        <Square></Square>
+      </SquareContext.Provider>
+    );
+  };
 
   const calculateBorder = (rowIndex, colIndex) => {
     return rowIndex % 3 === 0
