@@ -334,7 +334,7 @@ const Square = () => {
         switch (value) {
           case symbols.PLAYER_X:
             return (
-              <Zoom in={true}>
+              <Zoom in={true} timeout={500}>
                 <svg
                   role="img"
                   viewBox="0 0 128 128"
