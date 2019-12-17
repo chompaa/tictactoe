@@ -1,5 +1,6 @@
 import React, { useState, useContext, createContext, useEffect } from "react";
 import {
+  useMediaQuery,
   Typography,
   Paper,
   Button,
@@ -23,9 +24,7 @@ const App = () => {
   return (
     <Fade in={true}>
       <div className="App">
-        <div>
-          <Board></Board>
-        </div>
+        <Board></Board>
       </div>
     </Fade>
   );
@@ -53,6 +52,7 @@ const Board = () => {
   const [move, setMove] = useState(symbols.PLAYER_O);
   const [connDialog, setConnDialog] = useState(false);
   const [shareDialog, setShareDialog] = useState(false);
+  const mobile = useMediaQuery("(min-width:600px)");
   let idField;
 
   useEffect(() => {
@@ -230,7 +230,7 @@ const Board = () => {
       <Grid className="grid-container" container direction="column" spacing={5}>
         <Grid item>
           <Grid container justify="center">
-            <Typography variant="h4">
+            <Typography variant={mobile ? "h2" : "h3"}>
               {(() => {
                 switch (state) {
                   case states.CONNECTED:
