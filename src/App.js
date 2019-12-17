@@ -9,22 +9,25 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  Fade,
+  Zoom
 } from "@material-ui/core";
 import { PlayArrow, FileCopy } from "@material-ui/icons";
 import "./App.css";
 import Peer from "peerjs";
-import { Animated } from "react-animated-css";
 
 const SquareContext = createContext();
 
 const App = () => {
   return (
-    <div className="App">
-      <Animated animationIn="fadeIn" isVisible={true}>
-        <Board></Board>
-      </Animated>
-    </div>
+    <Fade in={true}>
+      <div className="App">
+        <div>
+          <Board></Board>
+        </div>
+      </div>
+    </Fade>
   );
 };
 
@@ -331,7 +334,7 @@ const Square = () => {
         switch (value) {
           case symbols.PLAYER_X:
             return (
-              <Animated animationIn="zoomIn" animationInDuration={500}>
+              <Zoom in={true}>
                 <svg
                   role="img"
                   viewBox="0 0 128 128"
@@ -357,11 +360,11 @@ const Square = () => {
                       strokeDashoffset: 0
                     }}></path>
                 </svg>
-              </Animated>
+              </Zoom>
             );
           case symbols.PLAYER_O:
             return (
-              <Animated animationIn="zoomIn" animationInDuration={500}>
+              <Zoom in={true} timeout={500}>
                 <svg
                   role="img"
                   viewBox="0 0 128 128"
@@ -380,7 +383,7 @@ const Square = () => {
                       strokeDashoffset: 0
                     }}></path>
                 </svg>
-              </Animated>
+              </Zoom>
             );
           default:
         }
