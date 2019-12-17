@@ -39,10 +39,9 @@ const Board = () => {
 
   const states = {
     NOT_CONNECTED: 0,
-    OPEN: 1,
-    CONNECTED: 2,
-    WINNER: 3,
-    DRAW: 4
+    CONNECTED: 1,
+    WINNER: 2,
+    DRAW: 3
   };
 
   const [state, setState] = useState(states.NOT_CONNECTED);
@@ -56,61 +55,9 @@ const Board = () => {
   const [shareDialog, setShareDialog] = useState(false);
   let idField;
 
-  const handleOpenConnDialog = () => {
-    setConnDialog(true);
-  };
-
-  const handleCloseConnDialog = () => {
-    setConnDialog(false);
-  };
-
-  const handleOpenShareDialog = () => {
-    setShareDialog(true);
-  };
-
-  const handleCloseShareDialog = () => {
-    setShareDialog(false);
-  };
-
-  const connect = () => {
-    handleCloseConnDialog();
-
-    if (player.conn || connId === player.id) return;
-
-    const conn = player.peer.connect(connId);
-    conn.on("open", () => {
-      setState(states.CONNECTED);
-      setPlayer({
-        ...player,
-        symbol: symbols.PLAYER_O,
-        conn: conn
-      });
-
-      conn.on("data", data => {
-        handleFakeClick(data, symbols.PLAYER_X);
-      });
-    });
-  };
-
-  const handleFakeClick = (index, symbol) => {
-    setSquares(prevSquares =>
-      prevSquares.map((squareValue, squareIndex) => {
-        return squareIndex === index ? symbol : squareValue;
-      })
-    );
-  };
-
-  const handleClick = index => {
-    if (move !== player.symbol || squares[index] || state !== states.CONNECTED)
-      return;
-
-    handleFakeClick(index, player.symbol);
-    player.conn.send(index);
-  };
-
   useEffect(() => {
     player.peer.on("open", id => {
-      console.log("ID", id);
+      console.log(`ID ${id}`);
       setPlayer(player => ({
         ...player,
         id: id,
@@ -163,6 +110,42 @@ const Board = () => {
     );
   }, [squares, states.WINNER, states.DRAW, symbols.PLAYER_X, symbols.PLAYER_O]);
 
+  const handleFakeClick = (index, symbol) => {
+    setSquares(prevSquares =>
+      prevSquares.map((squareValue, squareIndex) => {
+        return squareIndex === index ? symbol : squareValue;
+      })
+    );
+  };
+
+  const handleClick = index => {
+    if (move !== player.symbol || squares[index] || state !== states.CONNECTED)
+      return;
+
+    handleFakeClick(index, player.symbol);
+    player.conn.send(index);
+  };
+
+  const connect = () => {
+    setConnDialog(false);
+
+    if (player.conn || connId === player.id) return;
+
+    const conn = player.peer.connect(connId);
+    conn.on("open", () => {
+      setState(states.CONNECTED);
+      setPlayer({
+        ...player,
+        symbol: symbols.PLAYER_O,
+        conn: conn
+      });
+
+      conn.on("data", data => {
+        handleFakeClick(data, symbols.PLAYER_X);
+      });
+    });
+  };
+
   const renderSquare = (index, border) => {
     let value = squares[index];
     return (
@@ -186,7 +169,7 @@ const Board = () => {
 
   return (
     <React.Fragment>
-      <Dialog open={connDialog} onClose={handleCloseConnDialog}>
+      <Dialog open={connDialog} onClose={() => setConnDialog(false)}>
         <DialogTitle>Connect to peer</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -200,7 +183,7 @@ const Board = () => {
             onChange={e => setConnId(e.target.value)}></TextField>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseConnDialog} color="primary">
+          <Button onClick={() => setConnDialog(false)} color="primary">
             Cancel
           </Button>
           <Button onClick={connect} color="primary">
@@ -208,7 +191,7 @@ const Board = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      <Dialog open={shareDialog} onClose={handleOpenShareDialog}>
+      <Dialog open={shareDialog} onClose={() => setShareDialog(false)}>
         <DialogTitle>Share</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -230,14 +213,14 @@ const Board = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseShareDialog} color="primary">
+          <Button onClick={() => setShareDialog(true)} color="primary">
             Cancel
           </Button>
           <Button
             onClick={() => {
               idField.select();
               document.execCommand("copy");
-              handleCloseShareDialog();
+              setShareDialog(false);
             }}
             color="primary">
             Copy
@@ -300,7 +283,7 @@ const Board = () => {
               color="primary"
               startIcon={<PlayArrow />}
               onClick={() => {
-                handleOpenConnDialog();
+                setConnDialog(true);
               }}>
               Connect
             </Button>
