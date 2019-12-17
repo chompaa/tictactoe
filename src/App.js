@@ -295,7 +295,7 @@ const Board = () => {
               color="primary"
               startIcon={<FileCopy />}
               onClick={() => {
-                handleOpenShareDialog();
+                setShareDialog(true);
               }}>
               Share
             </Button>
