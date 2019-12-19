@@ -4,7 +4,7 @@ import React, {
   createContext,
   useEffect,
   useCallback,
-  useRef
+  useRef,
 } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import {
@@ -22,68 +22,66 @@ import {
   Backdrop,
   CircularProgress,
   Fade,
-  Zoom
+  Zoom,
 } from "@material-ui/core";
 import { PlayArrow, FileCopy } from "@material-ui/icons";
 import "./App.css";
 import Peer from "peerjs";
 
 const SquareContext = createContext();
-const mobile = useMediaQuery("(min-width:600px)");
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme) => ({
   gridContainer: {
     width: "100vw !important",
-    margin: "0 !important"
+    margin: "0 !important",
   },
 
   button: {
-    width: "8rem"
+    width: "8rem",
   },
 
   board: {
     display: "inline-block",
-    padding: theme.spacing(2)
+    padding: theme.spacing(2),
   },
 
   backdrop: {
     zIndex: theme.zIndex.drawer + 1,
-    color: "#fff"
-  }
+    color: "#fff",
+  },
 }));
 
-const App = () => {
-  return (
-    <Fade in={true}>
-      <div className="App">
-        <Board></Board>
-      </div>
-    </Fade>
-  );
-};
+const App = () => (
+  <Fade in>
+    <div className="App">
+      <Board />
+    </div>
+  </Fade>
+);
+
 
 const Board = () => {
   const symbols = {
     PLAYER_X: "X",
-    PLAYER_O: "O"
+    PLAYER_O: "O",
   };
 
   const states = {
     NOT_CONNECTED: 0,
     CONNECTED: 1,
     WIN: 2,
-    DRAW: 3
+    DRAW: 3,
   };
 
   const rematch = {
     REMATCH_ACCEPT: "REMATCH ACCEPT",
     REMATCH_REJECT: "REMATCH REJECT",
-    REMATCH_TIME: 10
+    REMATCH_TIME: 10,
   };
 
   const [state, setState] = useState(states.NOT_CONNECTED);
   const [player, setPlayer] = useState({
-    peer: new Peer()
+    peer: new Peer(),
   });
   const [squares, setSquares] = useState(Array.from({ length: 9 }));
   const [connId, setConnId] = useState(null);
@@ -94,13 +92,15 @@ const Board = () => {
     rematch: null,
     playerStatus: null,
     opponentStatus: null,
-    time: 0
+    time: 0,
   });
   const [rematchDialog, setRematchDialog] = useState(false);
   const [rematchBackdrop, setRematchBackdrop] = useState(false);
   const [rematchRejectDialog, setRematchRejectDialog] = useState(false);
 
   const shareInput = useRef(null);
+
+  const mobile = useMediaQuery("(min-width:600px)");
 
   const handleGameReset = useCallback(() => {
     setState(states.CONNECTED);
@@ -109,15 +109,15 @@ const Board = () => {
     setRematchState({
       rematch: null,
       playerStatus: null,
-      opponentStatus: null
+      opponentStatus: null,
     });
   }, [states.CONNECTED, symbols.PLAYER_O]);
 
   const handleRematch = useCallback(() => {
     setRematchDialog(true);
-    setRematchState(rematchState => ({
-      ...rematchState,
-      time: rematch.REMATCH_TIME
+    setRematchState((r) => ({
+      ...r,
+      time: rematch.REMATCH_TIME,
     }));
   }, [rematch.REMATCH_TIME]);
 
@@ -125,9 +125,9 @@ const Board = () => {
     setRematchDialog(false);
     setRematchBackdrop(true);
 
-    setRematchState(rematchState => ({
-      ...rematchState,
-      playerStatus: true
+    setRematchState((r) => ({
+      ...r,
+      playerStatus: true,
     }));
 
     player.conn.send(rematch.REMATCH_ACCEPT);
@@ -136,25 +136,25 @@ const Board = () => {
   const handlePlayerRematchReject = useCallback(() => {
     setRematchDialog(false);
 
-    setRematchState(rematchState => ({
-      ...rematchState,
-      playerStatus: false
+    setRematchState((r) => ({
+      ...r,
+      playerStatus: false,
     }));
 
     player.conn.send(rematch.REMATCH_REJECT);
   }, [player.conn, rematch.REMATCH_REJECT]);
 
   const handleOpponentRematchAccept = useCallback(() => {
-    setRematchState(rematchState => ({
-      ...rematchState,
-      opponentStatus: true
+    setRematchState((r) => ({
+      ...r,
+      opponentStatus: true,
     }));
   }, []);
 
   const handleOpponentRematchReject = useCallback(() => {
-    setRematchState(rematchState => ({
-      ...rematchState,
-      opponentStatus: false
+    setRematchState((r) => ({
+      ...r,
+      opponentStatus: false,
     }));
 
     // playerStatus could be null if the user has not pressed yes/no
@@ -164,6 +164,21 @@ const Board = () => {
       setRematchRejectDialog(true);
     }
   }, [rematchState.playerStatus]);
+
+  const handleFakeClick = (index, symbol) => {
+    setSquares((s) => s.map(
+      (squareValue, squareIndex) => (squareIndex === index ? symbol : squareValue),
+    ));
+  };
+
+  const handleClick = (index) => {
+    if (move !== player.symbol || squares[index] || state !== states.CONNECTED) {
+      return;
+    }
+
+    handleFakeClick(index, player.symbol);
+    player.conn.send(index);
+  };
 
   const handleData = useCallback(
     (data, symbol) => {
@@ -182,28 +197,27 @@ const Board = () => {
       handleOpponentRematchAccept,
       handleOpponentRematchReject,
       rematch.REMATCH_ACCEPT,
-      rematch.REMATCH_REJECT
-    ]
+      rematch.REMATCH_REJECT,
+    ],
   );
 
   useEffect(() => {
-    player.peer.on("open", id => {
-      console.log(`ID ${id}`);
-      setPlayer(player => ({
-        ...player,
-        id: id,
-        symbol: symbols.PLAYER_X
+    player.peer.on("open", (id) => {
+      setPlayer((p) => ({
+        ...p,
+        id,
+        symbol: symbols.PLAYER_X,
       }));
-      player.peer.on("connection", conn => {
+      player.peer.on("connection", (conn) => {
         setState(states.CONNECTED);
         setConnId(conn.peer);
-        setPlayer(player => ({
-          ...player,
-          conn: conn
+        setPlayer((p) => ({
+          ...p,
+          conn,
         }));
 
-        conn.on("data", data => {
-          handleData(data, symbols.PLAYER_O);
+        conn.on("data", (d) => {
+          handleData(d, symbols.PLAYER_O);
         });
       });
     });
@@ -212,7 +226,7 @@ const Board = () => {
     states.CONNECTED,
     symbols.PLAYER_X,
     symbols.PLAYER_O,
-    handleData
+    handleData,
   ]);
 
   useEffect(() => {
@@ -224,55 +238,51 @@ const Board = () => {
       [1, 4, 7],
       [2, 5, 8],
       [0, 4, 8],
-      [2, 4, 6]
-    ].forEach(index => {
+      [2, 4, 6],
+    ].forEach((index) => {
       if (
-        squares[index[0]] &&
-        squares[index[0]] === squares[index[1]] &&
-        squares[index[0]] === squares[index[2]]
+        squares[index[0]]
+        && squares[index[0]] === squares[index[1]]
+        && squares[index[0]] === squares[index[2]]
       ) {
         setState(states.WIN);
-        setPlayer(player => ({
-          ...player,
-          winner: player.symbol === squares[index[0]]
+        setPlayer((p) => ({
+          ...p,
+          winner: player.symbol === squares[index[0]],
         }));
         handleRematch();
       }
     });
 
-    if (squares.every(square => square)) {
+    if (squares.every((s) => s)) {
       handleRematch();
-      return setState(state => (state === states.WIN ? state : states.DRAW));
+      setState((s) => (s === states.WIN ? s : states.DRAW));
+      return;
     }
 
-    setMove(move =>
-      move === symbols.PLAYER_X ? symbols.PLAYER_O : symbols.PLAYER_X
-    );
+    setMove((m) => (m === symbols.PLAYER_X ? symbols.PLAYER_O : symbols.PLAYER_X));
   }, [
     squares,
     states.WIN,
     states.DRAW,
     symbols.PLAYER_X,
     symbols.PLAYER_O,
-    handleRematch
+    handleRematch,
   ]);
 
   useEffect(() => {
     if (!rematchState.playerState) {
       if (
-        (state === states.WIN || state === states.DRAW) &&
-        rematchState.time === 0
+        (state === states.WIN || state === states.DRAW)
+        && rematchState.time === 0
       ) {
         handlePlayerRematchReject();
       } else if (rematchState.time !== 0) {
-        setTimeout(
-          () =>
-            setRematchState(rematchState => ({
-              ...rematchState,
-              time: rematchState.time - 1
-            })),
-          1000
-        );
+        setTimeout(() => setRematchState((r) => ({
+          ...r,
+          time: rematchState.time - 1,
+        })),
+        1000);
       }
     }
   }, [
@@ -281,7 +291,7 @@ const Board = () => {
     states.WIN,
     states.DRAW,
     rematchState.time,
-    handlePlayerRematchReject
+    handlePlayerRematchReject,
   ]);
 
   useEffect(() => {
@@ -293,24 +303,8 @@ const Board = () => {
     rematchState,
     rematchState.playerStatus,
     rematchState.opponentStatus,
-    handleGameReset
+    handleGameReset,
   ]);
-
-  const handleFakeClick = (index, symbol) => {
-    setSquares(prevSquares =>
-      prevSquares.map((squareValue, squareIndex) => {
-        return squareIndex === index ? symbol : squareValue;
-      })
-    );
-  };
-
-  const handleClick = index => {
-    if (move !== player.symbol || squares[index] || state !== states.CONNECTED)
-      return;
-
-    handleFakeClick(index, player.symbol);
-    player.conn.send(index);
-  };
 
   const connect = () => {
     setConnDialog(false);
@@ -323,40 +317,48 @@ const Board = () => {
       setPlayer({
         ...player,
         symbol: symbols.PLAYER_O,
-        conn: conn
+        conn,
       });
 
-      conn.on("data", data => {
+      conn.on("data", (data) => {
         handleData(data, symbols.PLAYER_X);
       });
     });
   };
 
   const renderSquare = (index, border) => {
-    let value = squares[index];
+    const value = squares[index];
     return (
       <SquareContext.Provider
         key={index}
-        value={{ handleClick, value, index, border, symbols }}>
-        <Square></Square>
+        value={{
+          handleClick, value, index, border, symbols,
+        }}
+      >
+        <Square />
       </SquareContext.Provider>
     );
   };
 
   const calculateBorder = (rowIndex, colIndex) => {
-    return rowIndex % 3 === 0
-      ? colIndex % 3 === 0
-        ? ""
-        : "right"
-      : colIndex % 3 === 0
-      ? "bottom"
-      : "bottom right";
+    if (rowIndex % 3 === 0) {
+      if (colIndex % 3 === 0) {
+        return "";
+      }
+      return "right";
+    }
+
+    if (colIndex % 3 === 0) {
+      return "bottom";
+    }
+
+    return "bottom right";
   };
 
   const classes = useStyles();
 
   return (
-    <React.Fragment>
+    <>
       <Dialog open={connDialog} onClose={() => setConnDialog(false)}>
         <DialogTitle>Connect to peer</DialogTitle>
         <DialogContent>
@@ -368,7 +370,8 @@ const Board = () => {
             margin="dense"
             label="ID"
             fullWidth
-            onChange={e => setConnId(e.target.value)}></TextField>
+            onChange={(e) => setConnId(e.target.value)}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConnDialog(false)} color="primary">
@@ -392,7 +395,7 @@ const Board = () => {
             fullWidth
             value={player.id}
             InputProps={{
-              readOnly: true
+              readOnly: true,
             }}
             inputRef={shareInput}
           />
@@ -407,16 +410,21 @@ const Board = () => {
               document.execCommand("copy");
               setShareDialog(false);
             }}
-            color="primary">
+            color="primary"
+          >
             Copy
           </Button>
         </DialogActions>
       </Dialog>
       <Dialog open={rematchDialog} onClose={() => setRematchDialog(false)}>
-        <DialogTitle>{"Rematch?"}</DialogTitle>
+        <DialogTitle>Rematch?</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Would you like to rematch? You have {rematchState.time} seconds to
+            Would you like to rematch? You have
+            {" "}
+            {rematchState.time}
+            {" "}
+seconds to
             accept.
           </DialogContentText>
         </DialogContent>
@@ -425,21 +433,24 @@ const Board = () => {
             onClick={() => {
               handlePlayerRematchAccept();
             }}
-            color="primary">
+            color="primary"
+          >
             Yes
           </Button>
           <Button
             onClick={() => {
               handlePlayerRematchReject();
             }}
-            color="primary">
+            color="primary"
+          >
             No
           </Button>
         </DialogActions>
       </Dialog>
       <Dialog
         open={rematchRejectDialog}
-        onClose={() => setRematchRejectDialog(false)}>
+        onClose={() => setRematchRejectDialog(false)}
+      >
         <DialogContent>
           <DialogContentText>
             Your opponent rejected the rematch.
@@ -458,7 +469,8 @@ const Board = () => {
         className={classes.gridContainer}
         container
         direction="column"
-        spacing={5}>
+        spacing={5}
+      >
         <Grid item>
           <Grid container justify="center">
             <Typography variant={mobile ? "h2" : "h3"}>
@@ -484,16 +496,14 @@ const Board = () => {
         </Grid>
         <Grid item>
           <Paper className={classes.board}>
-            <table className="board">
+            <table role="grid" className="board">
               <tbody>
                 {Array.from({ length: 3 }, (_, rowIndex) => (
                   <tr key={rowIndex}>
-                    {Array.from({ length: 3 }, (_, colIndex) =>
-                      renderSquare(
-                        rowIndex * 3 + colIndex,
-                        calculateBorder(rowIndex + 1, colIndex + 1)
-                      )
-                    )}
+                    {Array.from({ length: 3 }, (_, colIndex) => renderSquare(
+                      rowIndex * 3 + colIndex,
+                      calculateBorder(rowIndex + 1, colIndex + 1),
+                    ))}
                   </tr>
                 ))}
               </tbody>
@@ -506,7 +516,8 @@ const Board = () => {
           direction="row"
           justify="center"
           alignItems="center"
-          spacing={6}>
+          spacing={6}
+        >
           <Grid item>
             <Button
               className={classes.button}
@@ -516,7 +527,8 @@ const Board = () => {
               onClick={() => {
                 setConnDialog(true);
               }}
-              disabled={state !== states.NOT_CONNECTED}>
+              disabled={state !== states.NOT_CONNECTED}
+            >
               Connect
             </Button>
           </Grid>
@@ -528,58 +540,64 @@ const Board = () => {
               startIcon={<FileCopy />}
               onClick={() => {
                 setShareDialog(true);
-              }}>
+              }}
+            >
               Share
             </Button>
           </Grid>
         </Grid>
       </Grid>
-    </React.Fragment>
+    </>
   );
 };
 
 const Square = () => {
-  const { handleClick, value, index, border, symbols } = useContext(
-    SquareContext
+  const {
+    handleClick, value, index, border, symbols,
+  } = useContext(
+    SquareContext,
   );
 
   return (
-    <td className={border} onClick={() => handleClick(index)}>
+    <td role="gridcell" className={border} onClick={() => handleClick(index)}>
       {(() => {
         switch (value) {
           case symbols.PLAYER_X:
             return (
-              <Zoom in={true} timeout={500}>
+              <Zoom in timeout={500}>
                 <svg
                   role="img"
                   viewBox="0 0 128 128"
                   style={{
                     visibility: true,
                     display: "block",
-                    margin: "auto"
-                  }}>
+                    margin: "auto",
+                  }}
+                >
                   <path
                     d="M28 28 L100 100"
                     style={{
                       stroke: "#673AB7",
                       strokeWidth: 10,
                       strokeDasharray: 135.764,
-                      strokeDashoffset: 0
-                    }}></path>
+                      strokeDashoffset: 0,
+                    }}
+                  />
                   <path
                     d="M 100 28 L28 100"
                     style={{
                       stroke: "#673AB7",
                       strokeWidth: 10,
                       strokeDasharray: 135.764,
-                      strokeDashoffset: 0
-                    }}></path>
+                      strokeDashoffset: 0,
+                    }}
+                  />
                 </svg>
               </Zoom>
             );
           case symbols.PLAYER_O:
             return (
-              <Zoom in={true} timeout={500}>
+              <Zoom in timeout={500}>
                 <svg
                   role="img"
                   viewBox="0 0 128 128"
@@ -587,20 +605,23 @@ const Square = () => {
                     fillOpacity: 0,
                     visibility: true,
                     display: "block",
-                    margin: "auto"
-                  }}>
+                    margin: "auto",
+                  }}
+                >
                   <path
                     d="M 64 28 A 36 36, 0, 1, 0, 64, 100 A 36 36, 0, 1, 0, 64, 28"
                     style={{
                       stroke: "#9C27B0",
                       strokeWidth: 10,
                       strokeDasharray: 301.635,
-                      strokeDashoffset: 0
-                    }}></path>
+                      strokeDashoffset: 0,
+                    }}
+                  />
                 </svg>
               </Zoom>
             );
           default:
+            return null;
         }
       })()}
     </td>
