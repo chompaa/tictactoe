@@ -1,4 +1,4 @@
-<a href="https://chompa.me"><img src="https://i.imgur.com/QXKjAuY.gifv" title="chompa.me"></a>
+<a href="https://chompa.me"><img src="game.gif" title="chompa.me"></a>
 
 # Tic Tac Toe
 
