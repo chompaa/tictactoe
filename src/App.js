@@ -1,4 +1,11 @@
-import React, { useState, useContext, createContext, useEffect } from "react";
+import React, {
+  useState,
+  useContext,
+  createContext,
+  useEffect,
+  useCallback
+} from "react";
+import { makeStyles } from "@material-ui/core/styles";
 import {
   useMediaQuery,
   Typography,
@@ -11,6 +18,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Backdrop,
+  CircularProgress,
   Fade,
   Zoom
 } from "@material-ui/core";
@@ -19,6 +28,13 @@ import "./App.css";
 import Peer from "peerjs";
 
 const SquareContext = createContext();
+
+const useStyles = makeStyles(theme => ({
+  backdrop: {
+    zIndex: theme.zIndex.drawer + 1,
+    color: "#fff"
+  }
+}));
 
 const App = () => {
   return (
@@ -39,8 +55,14 @@ const Board = () => {
   const states = {
     NOT_CONNECTED: 0,
     CONNECTED: 1,
-    WINNER: 2,
+    WIN: 2,
     DRAW: 3
+  };
+
+  const rematch = {
+    REMATCH_ACCEPT: "REMATCH ACCEPT",
+    REMATCH_REJECT: "REMATCH REJECT",
+    REMATCH_TIME: 10
   };
 
   const [state, setState] = useState(states.NOT_CONNECTED);
@@ -52,8 +74,103 @@ const Board = () => {
   const [move, setMove] = useState(symbols.PLAYER_O);
   const [connDialog, setConnDialog] = useState(false);
   const [shareDialog, setShareDialog] = useState(false);
+
+  const [rematchState, setRematchState] = useState({
+    rematch: null,
+    playerStatus: null,
+    opponentStatus: null,
+    time: 0
+  });
+  const [rematchDialog, setRematchDialog] = useState(false);
+  const [rematchBackdrop, setRematchBackdrop] = useState(false);
+  const [rematchRejectDialog, setRematchRejectDialog] = useState(false);
+
   const mobile = useMediaQuery("(min-width:600px)");
   let idField;
+
+  const handleGameReset = useCallback(() => {
+    setState(states.CONNECTED);
+    setMove(symbols.PLAYER_O);
+    setSquares(Array.from({ length: 9 }));
+    setRematchState({
+      rematch: null,
+      playerStatus: null,
+      opponentStatus: null
+    });
+  }, [states.CONNECTED, symbols.PLAYER_O]);
+
+  const handleRematch = useCallback(() => {
+    setRematchDialog(true);
+    setRematchState(rematchState => ({
+      ...rematchState,
+      time: rematch.REMATCH_TIME
+    }));
+  }, [rematch.REMATCH_TIME]);
+
+  const handlePlayerRematchAccept = () => {
+    setRematchDialog(false);
+    setRematchBackdrop(true);
+
+    setRematchState(rematchState => ({
+      ...rematchState,
+      playerStatus: true
+    }));
+
+    player.conn.send(rematch.REMATCH_ACCEPT);
+  };
+
+  const handlePlayerRematchReject = useCallback(() => {
+    setRematchDialog(false);
+
+    setRematchState(rematchState => ({
+      ...rematchState,
+      playerStatus: false
+    }));
+
+    player.conn.send(rematch.REMATCH_REJECT);
+  }, [player.conn, rematch.REMATCH_REJECT]);
+
+  const handleOpponentRematchAccept = useCallback(() => {
+    setRematchState(rematchState => ({
+      ...rematchState,
+      opponentStatus: true
+    }));
+  }, []);
+
+  const handleOpponentRematchReject = useCallback(() => {
+    setRematchState(rematchState => ({
+      ...rematchState,
+      opponentStatus: false
+    }));
+
+    // playerStatus could be null if the user has not pressed yes/no
+    if (rematchState.playerStatus !== false) {
+      setRematchDialog(false);
+      setRematchBackdrop(false);
+      setRematchRejectDialog(true);
+    }
+  }, [rematchState.playerStatus]);
+
+  const handleData = useCallback(
+    (data, symbol) => {
+      switch (data) {
+        case rematch.REMATCH_ACCEPT:
+          handleOpponentRematchAccept();
+          break;
+        case rematch.REMATCH_REJECT:
+          handleOpponentRematchReject();
+          break;
+        default:
+          handleFakeClick(data, symbol);
+      }
+    },
+    [
+      handleOpponentRematchAccept,
+      handleOpponentRematchReject,
+      rematch.REMATCH_ACCEPT,
+      rematch.REMATCH_REJECT
+    ]
+  );
 
   useEffect(() => {
     player.peer.on("open", id => {
@@ -72,11 +189,17 @@ const Board = () => {
         }));
 
         conn.on("data", data => {
-          handleFakeClick(data, symbols.PLAYER_O);
+          handleData(data, symbols.PLAYER_O);
         });
       });
     });
-  }, [player.peer, states.CONNECTED, symbols.PLAYER_X, symbols.PLAYER_O]);
+  }, [
+    player.peer,
+    states.CONNECTED,
+    symbols.PLAYER_X,
+    symbols.PLAYER_O,
+    handleData
+  ]);
 
   useEffect(() => {
     [
@@ -94,21 +217,70 @@ const Board = () => {
         squares[index[0]] === squares[index[1]] &&
         squares[index[0]] === squares[index[2]]
       ) {
-        setState(states.WINNER);
+        setState(states.WIN);
         setPlayer(player => ({
           ...player,
           winner: player.symbol === squares[index[0]]
         }));
+        handleRematch();
       }
     });
 
-    if (squares.every(square => square))
-      return setState(state => (state === states.WINNER ? state : states.DRAW));
+    if (squares.every(square => square)) {
+      handleRematch();
+      return setState(state => (state === states.WIN ? state : states.DRAW));
+    }
 
     setMove(move =>
       move === symbols.PLAYER_X ? symbols.PLAYER_O : symbols.PLAYER_X
     );
-  }, [squares, states.WINNER, states.DRAW, symbols.PLAYER_X, symbols.PLAYER_O]);
+  }, [
+    squares,
+    states.WIN,
+    states.DRAW,
+    symbols.PLAYER_X,
+    symbols.PLAYER_O,
+    handleRematch
+  ]);
+
+  useEffect(() => {
+    if (!rematchState.playerState) {
+      if (
+        (state === states.WIN || state === states.DRAW) &&
+        rematchState.time === 0
+      ) {
+        handlePlayerRematchReject();
+      } else if (rematchState.time !== 0) {
+        setTimeout(
+          () =>
+            setRematchState(rematchState => ({
+              ...rematchState,
+              time: rematchState.time - 1
+            })),
+          1000
+        );
+      }
+    }
+  }, [
+    rematchState.playerState,
+    state,
+    states.WIN,
+    states.DRAW,
+    rematchState.time,
+    handlePlayerRematchReject
+  ]);
+
+  useEffect(() => {
+    if (rematchState.playerStatus && rematchState.opponentStatus) {
+      setRematchBackdrop(false);
+      handleGameReset();
+    }
+  }, [
+    rematchState,
+    rematchState.playerStatus,
+    rematchState.opponentStatus,
+    handleGameReset
+  ]);
 
   const handleFakeClick = (index, symbol) => {
     setSquares(prevSquares =>
@@ -141,7 +313,7 @@ const Board = () => {
       });
 
       conn.on("data", data => {
-        handleFakeClick(data, symbols.PLAYER_X);
+        handleData(data, symbols.PLAYER_X);
       });
     });
   };
@@ -166,6 +338,8 @@ const Board = () => {
       ? "bottom"
       : "bottom right";
   };
+
+  const classes = useStyles();
 
   return (
     <React.Fragment>
@@ -218,7 +392,6 @@ const Board = () => {
           </Button>
           <Button
             onClick={() => {
-              idField.select();
               document.execCommand("copy");
               setShareDialog(false);
             }}
@@ -227,6 +400,48 @@ const Board = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <Dialog open={rematchDialog} onClose={() => setRematchDialog(false)}>
+        <DialogTitle>{"Rematch?"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Would you like to rematch? You have {rematchState.time} seconds to
+            accept.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              handlePlayerRematchAccept();
+            }}
+            color="primary">
+            Yes
+          </Button>
+          <Button
+            onClick={() => {
+              handlePlayerRematchReject();
+            }}
+            color="primary">
+            No
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={rematchRejectDialog}
+        onClose={() => setRematchRejectDialog(false)}>
+        <DialogContent>
+          <DialogContentText>
+            Your opponent rejected the rematch.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRematchRejectDialog(false)} color="primary">
+            Ok
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Backdrop className={classes.backdrop} open={rematchBackdrop}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
       <Grid className="grid-container" container direction="column" spacing={5}>
         <Grid item>
           <Grid container justify="center">
@@ -242,7 +457,7 @@ const Board = () => {
                     }
                   case states.DRAW:
                     return "Draw!";
-                  case states.WINNER:
+                  case states.WIN:
                     return player.winner ? "You won!" : "You lost..";
                   default:
                     return "Waiting for opponent..";
@@ -284,7 +499,8 @@ const Board = () => {
               startIcon={<PlayArrow />}
               onClick={() => {
                 setConnDialog(true);
-              }}>
+              }}
+              disabled={state !== states.NOT_CONNECTED}>
               Connect
             </Button>
           </Grid>
