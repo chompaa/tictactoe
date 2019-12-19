@@ -9,20 +9,6 @@
   min-height: -webkit-fill-available;
 }
 
-.grid-container {
-  width: 100vw !important;
-  margin: 0 !important;
-}
-
-.button {
-  width: 8rem;
-}
-
-.board-paper {
-  display: inline-block;
-  padding: 1rem;
-}
-
 .board {
   border-collapse: collapse;
   margin: 0 auto;

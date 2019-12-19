@@ -23,13 +23,27 @@ import {
   Fade,
   Zoom
 } from "@material-ui/core";
-import { PlayArrow, FileCopy } from "@material-ui/icons";
+import { PlayArrow, FileCopy, CallMissedSharp } from "@material-ui/icons";
 import "./App.css";
 import Peer from "peerjs";
 
 const SquareContext = createContext();
 
 const useStyles = makeStyles(theme => ({
+  gridContainer: {
+    width: "100vw !important",
+    margin: "0 !important"
+  },
+
+  button: {
+    width: "8rem"
+  },
+
+  board: {
+    display: "inline-block",
+    padding: theme.spacing(2)
+  },
+
   backdrop: {
     zIndex: theme.zIndex.drawer + 1,
     color: "#fff"
@@ -442,7 +456,11 @@ const Board = () => {
       <Backdrop className={classes.backdrop} open={rematchBackdrop}>
         <CircularProgress color="inherit" />
       </Backdrop>
-      <Grid className="grid-container" container direction="column" spacing={5}>
+      <Grid
+        className={classes.gridContainer}
+        container
+        direction="column"
+        spacing={5}>
         <Grid item>
           <Grid container justify="center">
             <Typography variant={mobile ? "h2" : "h3"}>
@@ -467,7 +485,7 @@ const Board = () => {
           </Grid>
         </Grid>
         <Grid item>
-          <Paper className="board-paper">
+          <Paper className={classes.board}>
             <table className="board">
               <tbody>
                 {Array.from({ length: 3 }, (_, rowIndex) => (
@@ -493,7 +511,7 @@ const Board = () => {
           spacing={6}>
           <Grid item>
             <Button
-              className="button"
+              className={classes.button}
               variant="contained"
               color="primary"
               startIcon={<PlayArrow />}
@@ -506,7 +524,7 @@ const Board = () => {
           </Grid>
           <Grid item>
             <Button
-              className="button"
+              className={classes.button}
               variant="contained"
               color="primary"
               startIcon={<FileCopy />}
