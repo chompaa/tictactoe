@@ -3,7 +3,8 @@ import React, {
   useContext,
   createContext,
   useEffect,
-  useCallback
+  useCallback,
+  useRef
 } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import {
@@ -23,7 +24,7 @@ import {
   Fade,
   Zoom
 } from "@material-ui/core";
-import { PlayArrow, FileCopy, CallMissedSharp } from "@material-ui/icons";
+import { PlayArrow, FileCopy } from "@material-ui/icons";
 import "./App.css";
 import Peer from "peerjs";
 
@@ -100,7 +101,7 @@ const Board = () => {
   const [rematchRejectDialog, setRematchRejectDialog] = useState(false);
 
   const mobile = useMediaQuery("(min-width:600px)");
-  let idField;
+  const shareInput = useRef(null);
 
   const handleGameReset = useCallback(() => {
     setState(states.CONNECTED);
@@ -394,10 +395,7 @@ const Board = () => {
             InputProps={{
               readOnly: true
             }}
-            onFocus={e => {
-              idField = e.target;
-              idField.select();
-            }}
+            inputRef={shareInput}
           />
         </DialogContent>
         <DialogActions>
@@ -406,6 +404,7 @@ const Board = () => {
           </Button>
           <Button
             onClick={() => {
+              shareInput.current.select();
               document.execCommand("copy");
               setShareDialog(false);
             }}
