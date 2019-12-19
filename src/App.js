@@ -29,6 +29,7 @@ import "./App.css";
 import Peer from "peerjs";
 
 const SquareContext = createContext();
+const mobile = useMediaQuery("(min-width:600px)");
 
 const useStyles = makeStyles(theme => ({
   gridContainer: {
@@ -89,7 +90,6 @@ const Board = () => {
   const [move, setMove] = useState(symbols.PLAYER_O);
   const [connDialog, setConnDialog] = useState(false);
   const [shareDialog, setShareDialog] = useState(false);
-
   const [rematchState, setRematchState] = useState({
     rematch: null,
     playerStatus: null,
@@ -100,7 +100,6 @@ const Board = () => {
   const [rematchBackdrop, setRematchBackdrop] = useState(false);
   const [rematchRejectDialog, setRematchRejectDialog] = useState(false);
 
-  const mobile = useMediaQuery("(min-width:600px)");
   const shareInput = useRef(null);
 
   const handleGameReset = useCallback(() => {
