@@ -46,6 +46,8 @@ const useStyles = makeStyles((theme) => ({
   },
 
   backdrop: {
+    width: "100vw !important",
+    margin: "0 !important",
     zIndex: theme.zIndex.drawer + 1,
     color: "#fff",
   },
@@ -265,6 +267,7 @@ const Board = () => {
     squares,
     states.WIN,
     states.DRAW,
+    player.symbol,
     symbols.PLAYER_X,
     symbols.PLAYER_O,
     handleRematch,
@@ -421,11 +424,8 @@ const Board = () => {
         <DialogContent>
           <DialogContentText>
             Would you like to rematch? You have
-            {" "}
             {rematchState.time}
-            {" "}
-seconds to
-            accept.
+            seconds to accept.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -511,7 +511,7 @@ seconds to
           </Paper>
         </Grid>
         <Grid
-          className="grid-container"
+          className={classes.gridContainer}
           container
           direction="row"
           justify="center"
