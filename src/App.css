@@ -16,9 +16,23 @@
   clear: both;
 }
 
+table {
+  width: inherit;
+  height: inherit;
+}
+
+tbody {
+  width: inherit;
+  height: inherit;
+}
+
+tr {
+  width: inherit;
+}
+
 td {
-  width: 10rem;
-  height: 10rem;
+  width: 33%;
+  height: 33%;
 }
 
 .bottom {
@@ -27,11 +41,4 @@ td {
 
 .right {
   border-right: 0.4rem solid #f0f0f0;
-}
-
-@media only screen and (max-width: 425px) {
-  td {
-    width: 5rem;
-    height: 5rem;
-  }
 }

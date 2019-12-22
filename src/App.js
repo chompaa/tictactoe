@@ -8,7 +8,6 @@ import React, {
 } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import {
-  useMediaQuery,
   Typography,
   Paper,
   Button,
@@ -31,6 +30,12 @@ import Peer from "peerjs";
 const SquareContext = createContext();
 
 const useStyles = makeStyles((theme) => ({
+  header: {
+    [theme.breakpoints.down("xs")]: {
+      fontSize: "3rem",
+    },
+  },
+
   gridContainer: {
     width: "100vw !important",
     margin: "0 !important",
@@ -40,9 +45,20 @@ const useStyles = makeStyles((theme) => ({
     width: "8rem",
   },
 
+  boardContainer: {
+    alignItems: "center",
+  },
+
   board: {
-    display: "inline-block",
+    display: "flex",
+    alignItems: "center",
     padding: theme.spacing(2),
+    width: "31.125rem",
+    height: "31.125rem",
+    [theme.breakpoints.down("xs")]: {
+      width: "17.25rem",
+      height: "17.25rem",
+    },
   },
 
   backdrop: {
@@ -101,8 +117,6 @@ const Board = () => {
   const [rematchRejectDialog, setRematchRejectDialog] = useState(false);
 
   const shareInput = useRef(null);
-
-  const mobile = useMediaQuery("(min-width:600px)");
 
   const handleGameReset = useCallback(() => {
     setState(states.CONNECTED);
@@ -473,7 +487,7 @@ const Board = () => {
       >
         <Grid item>
           <Grid container justify="center">
-            <Typography variant={mobile ? "h2" : "h3"}>
+            <Typography className={classes.header} variant="h2">
               {(() => {
                 switch (state) {
                   case states.CONNECTED:
@@ -494,7 +508,13 @@ const Board = () => {
             </Typography>
           </Grid>
         </Grid>
-        <Grid item>
+        <Grid
+          className={classes.boardContainer}
+          container
+          direction="row"
+          justify="center"
+          alignItems="center"
+        >
           <Paper className={classes.board}>
             <table role="grid" className="board">
               <tbody>
