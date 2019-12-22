@@ -178,16 +178,18 @@ const Board = () => {
 
     if ((line[1] - line[0]) === 1) {
       // horizontal
-      draw = `M5,${17 * (((line[0] * 2) / 3) + 1)}L97,${17 * (((line[0] * 2) / 3) + 1)}`;
+      draw = `M4,${Math.round((64 / 3) * (((line[0] * 2) / 3) + 1))}
+        L124,${Math.round((64 / 3) * (((line[0] * 2) / 3) + 1))}`;
     } else if ((line[1] - line[0]) === 3) {
       // vertical
-      draw = `M${17 * ((line[0] * 2) + 1)},5L${17 * ((line[0] * 2) + 1)},97`;
+      draw = `M${Math.round((64 / 3) * ((line[0] * 2) + 1))},
+        4L${Math.round((64 / 3) * ((line[0] * 2) + 1))},124`;
     } else if (line[0] === 0) {
       // top left to bottom right
-      draw = "M5,5L97,97";
+      draw = "M4,4L124,124";
     } else {
       // top right to bottom left
-      draw = "M97,5L5,97";
+      draw = "M124,4L4,124";
     }
 
     setWinLine((w) => ({
@@ -591,7 +593,7 @@ const Board = () => {
             <svg
               pointerEvents="none"
               role="img"
-              viewBox="0 0 102 102"
+              viewBox="0 0 128 128"
               style={{
                 visibility: true,
                 display: "block",
