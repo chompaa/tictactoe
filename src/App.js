@@ -70,20 +70,6 @@ const useStyles = makeStyles((theme) => ({
     [theme.breakpoints.down("xs")]: {
       height: "50%",
     },
-    /* style:
-      "visibility: true;"
-      + "display: block;"
-      + "margin: auto;"
-      + "width: 100%;"
-      + "height: 100%;",
-    [theme.breakpoints.down("xs")]: {
-      style:
-      "visibility: true;"
-      + "display: block;"
-      + "margin: auto;"
-      + "width: 100%;"
-      + "height: 50%;",
-    }, */
   },
 
   backdrop: {
