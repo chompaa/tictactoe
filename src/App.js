@@ -61,6 +61,31 @@ const useStyles = makeStyles((theme) => ({
     },
   },
 
+  squareSvg: {
+    visibility: true,
+    display: "block",
+    margin: "auto",
+    width: "100%",
+    height: "100%",
+    [theme.breakpoints.down("xs")]: {
+      height: "50%",
+    },
+    /* style:
+      "visibility: true;"
+      + "display: block;"
+      + "margin: auto;"
+      + "width: 100%;"
+      + "height: 100%;",
+    [theme.breakpoints.down("xs")]: {
+      style:
+      "visibility: true;"
+      + "display: block;"
+      + "margin: auto;"
+      + "width: 100%;"
+      + "height: 50%;",
+    }, */
+  },
+
   backdrop: {
     width: "100vw !important",
     margin: "0 !important",
@@ -79,11 +104,6 @@ const App = () => (
 
 
 const Board = () => {
-  const symbols = {
-    PLAYER_X: "X",
-    PLAYER_O: "O",
-  };
-
   const states = {
     NOT_CONNECTED: 0,
     CONNECTED: 1,
@@ -94,48 +114,111 @@ const Board = () => {
   const rematch = {
     REMATCH_ACCEPT: "REMATCH ACCEPT",
     REMATCH_REJECT: "REMATCH REJECT",
-    REMATCH_TIME: 10,
+    REMATCH_DELAY: 2000,
+    REMATCH_TIMEOUT: 10,
   };
 
   const [state, setState] = useState(states.NOT_CONNECTED);
   const [player, setPlayer] = useState({
     peer: new Peer(),
   });
+  const [players] = useState({
+    PLAYER_X: {
+      SYMBOL: "X",
+      COLOUR: "#673AB7",
+    },
+    PLAYER_O: {
+      SYMBOL: "O",
+      COLOUR: "#9C27B0",
+    },
+  });
   const [squares, setSquares] = useState(Array.from({ length: 9 }));
   const [connId, setConnId] = useState(null);
-  const [move, setMove] = useState(symbols.PLAYER_O);
+  const [move, setMove] = useState(players.PLAYER_O.SYMBOL);
   const [connDialog, setConnDialog] = useState(false);
   const [shareDialog, setShareDialog] = useState(false);
   const [rematchState, setRematchState] = useState({
     rematch: null,
     playerStatus: null,
     opponentStatus: null,
+    count: false,
     time: 0,
   });
   const [rematchDialog, setRematchDialog] = useState(false);
   const [rematchBackdrop, setRematchBackdrop] = useState(false);
   const [rematchRejectDialog, setRematchRejectDialog] = useState(false);
+  const [winLine, setWinLine] = useState({
+    draw: null,
+    style: null,
+  });
 
   const shareInput = useRef(null);
 
   const handleGameReset = useCallback(() => {
     setState(states.CONNECTED);
-    setMove(symbols.PLAYER_O);
+    setMove(players.PLAYER_O.SYMBOL);
     setSquares(Array.from({ length: 9 }));
     setRematchState({
       rematch: null,
       playerStatus: null,
       opponentStatus: null,
+      count: false,
+      time: 0,
     });
-  }, [states.CONNECTED, symbols.PLAYER_O]);
+    setWinLine({
+      draw: null,
+      style: null,
+    });
+  }, [states.CONNECTED, players.PLAYER_O.SYMBOL]);
 
   const handleRematch = useCallback(() => {
     setRematchDialog(true);
     setRematchState((r) => ({
       ...r,
-      time: rematch.REMATCH_TIME,
+      count: true,
+      time: rematch.REMATCH_TIMEOUT,
     }));
-  }, [rematch.REMATCH_TIME]);
+  }, [rematch.REMATCH_TIMEOUT]);
+
+  const handleWin = useCallback((line, winner) => {
+    setState(states.WIN);
+
+    setPlayer((p) => ({
+      ...p,
+      winner: p.symbol === winner.SYMBOL,
+    }));
+
+    let draw;
+
+    if ((line[1] - line[0]) === 1) {
+      // horizontal
+      draw = `M5,${17 * (((line[0] * 2) / 3) + 1)}L97,${17 * (((line[0] * 2) / 3) + 1)}`;
+    } else if ((line[1] - line[0]) === 3) {
+      // vertical
+      draw = `M${17 * ((line[0] * 2) + 1)},5L${17 * ((line[0] * 2) + 1)},97`;
+    } else if (line[0] === 0) {
+      // top left to bottom right
+      draw = "M5,5L97,97";
+    } else {
+      // top right to bottom left
+      draw = "M97,5L5,97";
+    }
+
+    setWinLine((w) => ({
+      ...w,
+      draw,
+      style: {
+        stroke: winner.COLOUR,
+        strokeDashoffset: 0,
+      },
+    }));
+
+    setTimeout(() => handleRematch(), rematch.REMATCH_DELAY);
+  }, [
+    states.WIN,
+    handleRematch,
+    rematch.REMATCH_DELAY,
+  ]);
 
   const handlePlayerRematchAccept = () => {
     setRematchDialog(false);
@@ -222,7 +305,7 @@ const Board = () => {
       setPlayer((p) => ({
         ...p,
         id,
-        symbol: symbols.PLAYER_X,
+        symbol: players.PLAYER_X.SYMBOL,
       }));
       player.peer.on("connection", (conn) => {
         setState(states.CONNECTED);
@@ -233,15 +316,15 @@ const Board = () => {
         }));
 
         conn.on("data", (d) => {
-          handleData(d, symbols.PLAYER_O);
+          handleData(d, players.PLAYER_O.SYMBOL);
         });
       });
     });
   }, [
     player.peer,
     states.CONNECTED,
-    symbols.PLAYER_X,
-    symbols.PLAYER_O,
+    players.PLAYER_X.SYMBOL,
+    players.PLAYER_O.SYMBOL,
     handleData,
   ]);
 
@@ -261,12 +344,9 @@ const Board = () => {
         && squares[index[0]] === squares[index[1]]
         && squares[index[0]] === squares[index[2]]
       ) {
-        setState(states.WIN);
-        setPlayer((p) => ({
-          ...p,
-          winner: player.symbol === squares[index[0]],
-        }));
-        handleRematch();
+        handleWin(index, squares[index[0]] === players.PLAYER_X.SYMBOL
+          ? players.PLAYER_X
+          : players.PLAYER_O);
       }
     });
 
@@ -276,23 +356,25 @@ const Board = () => {
       return;
     }
 
-    setMove((m) => (m === symbols.PLAYER_X ? symbols.PLAYER_O : symbols.PLAYER_X));
+    setMove((m) => (m === players.PLAYER_X.SYMBOL
+      ? players.PLAYER_O.SYMBOL
+      : players.PLAYER_X.SYMBOL
+    ));
   }, [
     squares,
     states.WIN,
     states.DRAW,
-    player.symbol,
-    symbols.PLAYER_X,
-    symbols.PLAYER_O,
+    players.PLAYER_X,
+    players.PLAYER_O,
+    handleWin,
     handleRematch,
   ]);
 
   useEffect(() => {
-    if (!rematchState.playerState) {
-      if (
-        (state === states.WIN || state === states.DRAW)
-        && rematchState.time === 0
-      ) {
+    if (rematchState.playerStatus === null
+      && rematchState.opponentStatus !== false
+      && rematchState.count) {
+      if (rematchState.time === 0) {
         handlePlayerRematchReject();
       } else if (rematchState.time !== 0) {
         setTimeout(() => setRematchState((r) => ({
@@ -303,7 +385,9 @@ const Board = () => {
       }
     }
   }, [
-    rematchState.playerState,
+    rematchState.playerStatus,
+    rematchState.opponentStatus,
+    rematchState.count,
     state,
     states.WIN,
     states.DRAW,
@@ -333,12 +417,12 @@ const Board = () => {
       setState(states.CONNECTED);
       setPlayer({
         ...player,
-        symbol: symbols.PLAYER_O,
+        symbol: players.PLAYER_O.SYMBOL,
         conn,
       });
 
       conn.on("data", (data) => {
-        handleData(data, symbols.PLAYER_X);
+        handleData(data, players.PLAYER_X.SYMBOL);
       });
     });
   };
@@ -349,7 +433,7 @@ const Board = () => {
       <SquareContext.Provider
         key={index}
         value={{
-          handleClick, value, index, border, symbols,
+          handleClick, value, index, border, players,
         }}
       >
         <Square />
@@ -438,7 +522,9 @@ const Board = () => {
         <DialogContent>
           <DialogContentText>
             Would you like to rematch? You have
+            {" "}
             {rematchState.time}
+            {" "}
             seconds to accept.
           </DialogContentText>
         </DialogContent>
@@ -516,6 +602,24 @@ const Board = () => {
           alignItems="center"
         >
           <Paper className={classes.board}>
+            <svg
+              pointerEvents="none"
+              role="img"
+              viewBox="0 0 102 102"
+              style={{
+                visibility: true,
+                display: "block",
+                position: "absolute",
+                margin: "auto",
+                width: "inherit",
+              }}
+            >
+              <path
+                className="win-line"
+                d={winLine.draw}
+                style={winLine.style}
+              />
+            </svg>
             <table role="grid" className="board">
               <tbody>
                 {Array.from({ length: 3 }, (_, rowIndex) => (
@@ -573,68 +677,59 @@ const Board = () => {
 
 const Square = () => {
   const {
-    handleClick, value, index, border, symbols,
+    handleClick, value, index, border, players,
   } = useContext(
     SquareContext,
   );
+
+  const classes = useStyles();
 
   return (
     <td role="gridcell" className={border} onClick={() => handleClick(index)}>
       {(() => {
         switch (value) {
-          case symbols.PLAYER_X:
+          case players.PLAYER_X.SYMBOL:
             return (
               <Zoom in timeout={500}>
                 <svg
+                  className={classes.squareSvg}
                   role="img"
                   viewBox="0 0 128 128"
-                  style={{
-                    visibility: true,
-                    display: "block",
-                    margin: "auto",
-                  }}
                 >
                   <path
                     d="M28 28 L100 100"
                     style={{
-                      stroke: "#673AB7",
+                      stroke: players.PLAYER_X.COLOUR,
                       strokeWidth: 10,
-                      strokeDasharray: 135.764,
-                      strokeDashoffset: 0,
                     }}
                   />
                   <path
                     d="M 100 28 L28 100"
                     style={{
-                      stroke: "#673AB7",
+                      stroke: players.PLAYER_X.COLOUR,
                       strokeWidth: 10,
-                      strokeDasharray: 135.764,
-                      strokeDashoffset: 0,
                     }}
                   />
                 </svg>
               </Zoom>
             );
-          case symbols.PLAYER_O:
+          case players.PLAYER_O.SYMBOL:
             return (
               <Zoom in timeout={500}>
                 <svg
+                  className={classes.squareSvg}
                   role="img"
                   viewBox="0 0 128 128"
                   style={{
                     fillOpacity: 0,
                     visibility: true,
-                    display: "block",
-                    margin: "auto",
                   }}
                 >
                   <path
                     d="M 64 28 A 36 36, 0, 1, 0, 64, 100 A 36 36, 0, 1, 0, 64, 28"
                     style={{
-                      stroke: "#9C27B0",
+                      stroke: players.PLAYER_O.COLOUR,
                       strokeWidth: 10,
-                      strokeDasharray: 301.635,
-                      strokeDashoffset: 0,
                     }}
                   />
                 </svg>
