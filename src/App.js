@@ -29,8 +29,12 @@ import Peer from "peerjs";
 
 const SquareContext = createContext();
 
+/**
+  * Styling for Material-UI components and SVG's
+  */
 const useStyles = makeStyles((theme) => ({
   header: {
+    // mobile check
     [theme.breakpoints.down("xs")]: {
       fontSize: "3rem",
     },
@@ -55,6 +59,7 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(2),
     width: "31.125rem",
     height: "31.125rem",
+    // mobile check
     [theme.breakpoints.down("xs")]: {
       width: "17.25rem",
       height: "17.25rem",
@@ -67,6 +72,7 @@ const useStyles = makeStyles((theme) => ({
     margin: "auto",
     width: "100%",
     height: "100%",
+    // mobile check
     [theme.breakpoints.down("xs")]: {
       height: "50%",
     },
@@ -90,6 +96,9 @@ const App = () => (
 
 
 const Board = () => {
+  /**
+   * Game states
+   */
   const states = {
     NOT_CONNECTED: 0,
     CONNECTED: 1,
@@ -97,6 +106,9 @@ const Board = () => {
     DRAW: 3,
   };
 
+  /**
+   * Rematch constants
+   */
   const rematch = {
     REMATCH_ACCEPT: "REMATCH ACCEPT",
     REMATCH_REJECT: "REMATCH REJECT",
@@ -104,6 +116,9 @@ const Board = () => {
     REMATCH_TIMEOUT: 10,
   };
 
+  /**
+   * State
+   */
   const [state, setState] = useState(states.NOT_CONNECTED);
   const [player, setPlayer] = useState({
     peer: new Peer(),
@@ -140,6 +155,9 @@ const Board = () => {
 
   const shareInput = useRef(null);
 
+  /**
+   * Handles a game reset
+   */
   const handleGameReset = useCallback(() => {
     setState(states.CONNECTED);
     setMove(players.PLAYER_O.SYMBOL);
@@ -157,6 +175,9 @@ const Board = () => {
     });
   }, [states.CONNECTED, players.PLAYER_O.SYMBOL]);
 
+  /**
+   * Handles the rematch prompt
+   */
   const handleRematch = useCallback(() => {
     setRematchDialog(true);
     setRematchState((r) => ({
@@ -166,16 +187,23 @@ const Board = () => {
     }));
   }, [rematch.REMATCH_TIMEOUT]);
 
+  /**
+   * Handles win condition
+   * @param {Array}   line    Winning line
+   * @param {Object}  winner  Winning player object
+   */
   const handleWin = useCallback((line, winner) => {
     setState(states.WIN);
 
     setPlayer((p) => ({
       ...p,
+      // check if the player has won
       winner: p.symbol === winner.SYMBOL,
     }));
 
     let draw;
 
+    // check whether we have a horizontal, vertical or diagonal line
     if ((line[1] - line[0]) === 1) {
       // horizontal
       draw = `M4,${Math.round((64 / 3) * (((line[0] * 2) / 3) + 1))}
@@ -192,6 +220,7 @@ const Board = () => {
       draw = "M124,4L4,124";
     }
 
+    // draw the win line onto the screen
     setWinLine((w) => ({
       ...w,
       draw,
@@ -201,6 +230,7 @@ const Board = () => {
       },
     }));
 
+    // prompt a rematch after rematch.REMATCH_DELAY ms
     setTimeout(() => handleRematch(), rematch.REMATCH_DELAY);
   }, [
     states.WIN,
@@ -208,8 +238,13 @@ const Board = () => {
     rematch.REMATCH_DELAY,
   ]);
 
+  /**
+   * Handles the player accepting a rematch
+   */
   const handlePlayerRematchAccept = () => {
+    // close the rematch dialog
     setRematchDialog(false);
+    // show loading screen
     setRematchBackdrop(true);
 
     setRematchState((r) => ({
@@ -217,10 +252,15 @@ const Board = () => {
       playerStatus: true,
     }));
 
+    // let our opponent know we've accepted
     player.conn.send(rematch.REMATCH_ACCEPT);
   };
 
+  /**
+   * Handles the player rejecting a rematch
+   */
   const handlePlayerRematchReject = useCallback(() => {
+    // close the rematch dialog
     setRematchDialog(false);
 
     setRematchState((r) => ({
@@ -228,9 +268,13 @@ const Board = () => {
       playerStatus: false,
     }));
 
+    // let our opponent know we've declined
     player.conn.send(rematch.REMATCH_REJECT);
   }, [player.conn, rematch.REMATCH_REJECT]);
 
+  /**
+   * Handles the opponent accepting a rematch
+   */
   const handleOpponentRematchAccept = useCallback(() => {
     setRematchState((r) => ({
       ...r,
@@ -238,35 +282,55 @@ const Board = () => {
     }));
   }, []);
 
+  /**
+   * Handles the opponent rejecting a rematch
+   */
   const handleOpponentRematchReject = useCallback(() => {
     setRematchState((r) => ({
       ...r,
       opponentStatus: false,
     }));
 
-    // playerStatus could be null if the user has not pressed yes/no
+    // playerStatus could be null if the user hasn't pressed yes or no
     if (rematchState.playerStatus !== false) {
+      // close the rematch dialog and loading screen if they're open
       setRematchDialog(false);
       setRematchBackdrop(false);
+      // notify the user of the rejection
       setRematchRejectDialog(true);
     }
   }, [rematchState.playerStatus]);
 
-  const handleFakeClick = (index, symbol) => {
+  /**
+   * Makes a move on the board
+   * @param  {Integer}  index   Index of the move
+   * @param  {String}   symbol  Move symbol
+   */
+  const makeMove = (index, symbol) => {
     setSquares((s) => s.map(
-      (squareValue, squareIndex) => (squareIndex === index ? symbol : squareValue),
+      // map the square value to symbol if we're at index
+      (sValue, sIndex) => (sIndex === index ? symbol : sValue),
     ));
   };
 
+  /**
+   * Handles a player click on a square
+   * @param  {Integer}  index  Index of the square clicked
+   */
   const handleClick = (index) => {
+    // stop if it's not the player's turn, the square is filled, or we aren't connected
     if (move !== player.symbol || squares[index] || state !== states.CONNECTED) {
       return;
     }
 
-    handleFakeClick(index, player.symbol);
+    makeMove(index, player.symbol);
+    // send the player's move to the opponent
     player.conn.send(index);
   };
 
+  /**
+   * Handles data receieved from the opponent if the player is the host
+   */
   const handleData = useCallback(
     (data, symbol) => {
       switch (data) {
@@ -277,7 +341,7 @@ const Board = () => {
           handleOpponentRematchReject();
           break;
         default:
-          handleFakeClick(data, symbol);
+          makeMove(data, symbol);
       }
     },
     [
@@ -288,13 +352,18 @@ const Board = () => {
     ],
   );
 
+  /**
+   * Sets listeners for peer events on component mount
+  */
   useEffect(() => {
+    // called when a connection to the PeerServer is established
     player.peer.on("open", (id) => {
       setPlayer((p) => ({
         ...p,
         id,
         symbol: players.PLAYER_X.SYMBOL,
       }));
+      // called when a new data connection is established from a remote peer
       player.peer.on("connection", (conn) => {
         setState(states.CONNECTED);
         setConnId(conn.peer);
@@ -303,6 +372,7 @@ const Board = () => {
           conn,
         }));
 
+        // called when data is receieved from the remote peer
         conn.on("data", (d) => {
           handleData(d, players.PLAYER_O.SYMBOL);
         });
@@ -316,6 +386,10 @@ const Board = () => {
     handleData,
   ]);
 
+  /**
+   * Checks for a win line or draw and updates the current move every time a
+   * square has changed
+  */
   useEffect(() => {
     [
       [0, 1, 2],
@@ -358,12 +432,18 @@ const Board = () => {
     handleRematch,
   ]);
 
+  /**
+   * Handles the rematch timeout
+  */
   useEffect(() => {
+    // only countdown if we haven't done anything and our opponent hasn't declined
     if (rematchState.playerStatus === null
       && rematchState.opponentStatus !== false
       && rematchState.count) {
+      // check if the countdown is finished
       if (rematchState.time === 0) {
         handlePlayerRematchReject();
+        // otherwise, keep counting down
       } else if (rematchState.time !== 0) {
         setTimeout(() => setRematchState((r) => ({
           ...r,
@@ -376,13 +456,13 @@ const Board = () => {
     rematchState.playerStatus,
     rematchState.opponentStatus,
     rematchState.count,
-    state,
-    states.WIN,
-    states.DRAW,
     rematchState.time,
     handlePlayerRematchReject,
   ]);
 
+  /**
+   * Checks if both players agreed to a rematch and calls handleGameReset
+  */
   useEffect(() => {
     if (rematchState.playerStatus && rematchState.opponentStatus) {
       setRematchBackdrop(false);
@@ -395,12 +475,20 @@ const Board = () => {
     handleGameReset,
   ]);
 
+  /**
+   * Handles connecting to a remote peer
+  */
   const connect = () => {
+    // hide the connect dialog
     setConnDialog(false);
 
+    // stop if we're already connected to a remote peer, or we're trying to
+    // connect to ourselves
     if (player.conn || connId === player.id) return;
 
+    // connect to the remote peer
     const conn = player.peer.connect(connId);
+    // called when the connection is established
     conn.on("open", () => {
       setState(states.CONNECTED);
       setPlayer({
@@ -409,12 +497,18 @@ const Board = () => {
         conn,
       });
 
+      // called when data is received from the remote peer
       conn.on("data", (data) => {
         handleData(data, players.PLAYER_X.SYMBOL);
       });
     });
   };
 
+  /**
+   * Renders a square component
+   * @param  {Integer}  index   Index of the square
+   * @param  {String}   border  Square border type
+   */
   const renderSquare = (index, border) => {
     const value = squares[index];
     return (
@@ -429,14 +523,23 @@ const Board = () => {
     );
   };
 
+  /**
+   * Calculates which borders a square should have
+   * @param   {Integer}  rowIndex  Square row index
+   * @param   {Integer}  colIndex  Square column index
+   * @return  {String}             Border class name(s)
+   */
   const calculateBorder = (rowIndex, colIndex) => {
+    // check if we're on the third row
     if (rowIndex % 3 === 0) {
+      // check if we're on the third column
       if (colIndex % 3 === 0) {
         return "";
       }
       return "right";
     }
 
+    // check if we're on the third column
     if (colIndex % 3 === 0) {
       return "bottom";
     }
