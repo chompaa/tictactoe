@@ -47,7 +47,8 @@ const Game = () => {
    */
   const [state, setState] = useState(states.NOT_CONNECTED);
   const [player, setPlayer] = useState({
-    peer: new Peer(),
+    // will assign a new ID if there's no ID in local storage
+    peer: new Peer(localStorage.getItem("ID")),
   });
   const [players] = useState({
     PLAYER_X: {
@@ -315,6 +316,8 @@ const Game = () => {
         id,
         symbol: players.PLAYER_X.SYMBOL,
       }));
+      // set the user's ID in local storage so it doesn't change when they refresh
+      localStorage.setItem("ID", id);
       // called when a new data connection is established from a remote peer
       player.peer.on("connection", (conn) => {
         setState(states.CONNECTED);
