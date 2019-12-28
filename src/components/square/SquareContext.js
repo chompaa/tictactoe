@@ -12,7 +12,7 @@ export const SquareProvider = ({ children, values }) => (
 SquareProvider.propTypes = {
   children: PropTypes.node.isRequired,
   values: PropTypes.shape({
-    value: PropTypes.number,
+    value: PropTypes.string,
     index: PropTypes.number,
     border: PropTypes.string,
   }).isRequired,

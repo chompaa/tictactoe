@@ -2,18 +2,11 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useRef,
 } from "react";
 import {
   Paper,
   Button,
   Grid,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Backdrop,
   CircularProgress,
 } from "@material-ui/core";
@@ -23,6 +16,10 @@ import useStyles from "./Styles";
 import { GameProvider } from "./GameContext";
 import Board from "../Board";
 import Status from "../Status";
+import Connect from "../dialogs/Connect";
+import Share from "../dialogs/Share";
+import Rematch from "../dialogs/Rematch";
+import Reject from "../dialogs/Reject";
 
 const Game = () => {
   /**
@@ -38,7 +35,7 @@ const Game = () => {
   /**
    * Rematch constants
    */
-  const rematch = {
+  const rematchData = {
     REMATCH_ACCEPT: "REMATCH ACCEPT",
     REMATCH_REJECT: "REMATCH REJECT",
     REMATCH_DELAY: 2000,
@@ -63,9 +60,8 @@ const Game = () => {
     },
   });
   const [squares, setSquares] = useState(Array.from({ length: 9 }));
-  const [connId, setConnId] = useState(null);
   const [move, setMove] = useState(players.PLAYER_O.SYMBOL);
-  const [connDialog, setConnDialog] = useState(false);
+  const [connectDialog, setConnectDialog] = useState(false);
   const [shareDialog, setShareDialog] = useState(false);
   const [rematchState, setRematchState] = useState({
     rematch: null,
@@ -75,14 +71,12 @@ const Game = () => {
     time: 0,
   });
   const [rematchDialog, setRematchDialog] = useState(false);
-  const [rematchBackdrop, setRematchBackdrop] = useState(false);
-  const [rematchRejectDialog, setRematchRejectDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [rejectDialog, setRejectDialog] = useState(false);
   const [winLine, setWinLine] = useState({
     draw: null,
     style: null,
   });
-
-  const shareInput = useRef(null);
 
   /**
    * Handles a game reset
@@ -112,9 +106,9 @@ const Game = () => {
     setRematchState((r) => ({
       ...r,
       count: true,
-      time: rematch.REMATCH_TIMEOUT,
+      time: rematchData.REMATCH_TIMEOUT,
     }));
-  }, [rematch.REMATCH_TIMEOUT]);
+  }, [rematchData.REMATCH_TIMEOUT]);
 
   /**
    * Handles win condition
@@ -160,11 +154,11 @@ const Game = () => {
     }));
 
     // prompt a rematch after rematch.REMATCH_DELAY ms
-    setTimeout(() => handleRematch(), rematch.REMATCH_DELAY);
+    setTimeout(() => handleRematch(), rematchData.REMATCH_DELAY);
   }, [
     states.WIN,
     handleRematch,
-    rematch.REMATCH_DELAY,
+    rematchData.REMATCH_DELAY,
   ]);
 
   /**
@@ -174,7 +168,7 @@ const Game = () => {
     // close the rematch dialog
     setRematchDialog(false);
     // show loading screen
-    setRematchBackdrop(true);
+    setLoading(true);
 
     setRematchState((r) => ({
       ...r,
@@ -182,7 +176,7 @@ const Game = () => {
     }));
 
     // let our opponent know we've accepted
-    player.conn.send(rematch.REMATCH_ACCEPT);
+    player.conn.send(rematchData.REMATCH_ACCEPT);
   };
 
   /**
@@ -198,8 +192,8 @@ const Game = () => {
     }));
 
     // let our opponent know we've declined
-    player.conn.send(rematch.REMATCH_REJECT);
-  }, [player.conn, rematch.REMATCH_REJECT]);
+    player.conn.send(rematchData.REMATCH_REJECT);
+  }, [player.conn, rematchData.REMATCH_REJECT]);
 
   /**
    * Handles the opponent accepting a rematch
@@ -224,18 +218,18 @@ const Game = () => {
     if (rematchState.playerStatus !== false) {
       // close the rematch dialog and loading screen if they're open
       setRematchDialog(false);
-      setRematchBackdrop(false);
+      setLoading(false);
       // notify the user of the rejection
-      setRematchRejectDialog(true);
+      setRejectDialog(true);
     }
   }, [rematchState.playerStatus]);
 
   /**
-   * Makes a move on the board
+   * Handles making a move on the board
    * @param  {Integer}  index   Index of the move
    * @param  {String}   symbol  Move symbol
    */
-  const makeMove = (index, symbol) => {
+  const handleMove = (index, symbol) => {
     setSquares((s) => s.map(
       // map the square value to symbol if we're at index
       (sValue, sIndex) => (sIndex === index ? symbol : sValue),
@@ -252,7 +246,7 @@ const Game = () => {
       return;
     }
 
-    makeMove(index, player.symbol);
+    handleMove(index, player.symbol);
     // send the player's move to the opponent
     player.conn.send(index);
   };
@@ -263,23 +257,52 @@ const Game = () => {
   const handleData = useCallback(
     (data, symbol) => {
       switch (data) {
-        case rematch.REMATCH_ACCEPT:
+        case rematchData.REMATCH_ACCEPT:
           handleOpponentRematchAccept();
           break;
-        case rematch.REMATCH_REJECT:
+        case rematchData.REMATCH_REJECT:
           handleOpponentRematchReject();
           break;
         default:
-          makeMove(data, symbol);
+          handleMove(data, symbol);
       }
     },
     [
       handleOpponentRematchAccept,
       handleOpponentRematchReject,
-      rematch.REMATCH_ACCEPT,
-      rematch.REMATCH_REJECT,
+      rematchData.REMATCH_ACCEPT,
+      rematchData.REMATCH_REJECT,
     ],
   );
+
+  /**
+   * Handles connecting to a remote peer
+  */
+  const handleConnect = (id) => {
+    // hide the connect dialog
+    setConnectDialog(false);
+
+    // stop if we're already connected to a remote peer, or we're trying to
+    // connect to ourselves
+    if (player.conn || id === player.id) return;
+
+    // connect to the remote peer
+    const conn = player.peer.connect(id);
+    // called when the connection is established
+    conn.on("open", () => {
+      setState(states.CONNECTED);
+      setPlayer({
+        ...player,
+        symbol: players.PLAYER_O.SYMBOL,
+        conn,
+      });
+
+      // called when data is received from the remote peer
+      conn.on("data", (data) => {
+        handleData(data, players.PLAYER_X.SYMBOL);
+      });
+    });
+  };
 
   /**
    * Sets listeners for peer events on component mount
@@ -295,7 +318,6 @@ const Game = () => {
       // called when a new data connection is established from a remote peer
       player.peer.on("connection", (conn) => {
         setState(states.CONNECTED);
-        setConnId(conn.peer);
         setPlayer((p) => ({
           ...p,
           conn,
@@ -394,7 +416,7 @@ const Game = () => {
   */
   useEffect(() => {
     if (rematchState.playerStatus && rematchState.opponentStatus) {
-      setRematchBackdrop(false);
+      setLoading(false);
       handleGameReset();
     }
   }, [
@@ -404,142 +426,29 @@ const Game = () => {
     handleGameReset,
   ]);
 
-  /**
-   * Handles connecting to a remote peer
-  */
-  const connect = () => {
-    // hide the connect dialog
-    setConnDialog(false);
-
-    // stop if we're already connected to a remote peer, or we're trying to
-    // connect to ourselves
-    if (player.conn || connId === player.id) return;
-
-    // connect to the remote peer
-    const conn = player.peer.connect(connId);
-    // called when the connection is established
-    conn.on("open", () => {
-      setState(states.CONNECTED);
-      setPlayer({
-        ...player,
-        symbol: players.PLAYER_O.SYMBOL,
-        conn,
-      });
-
-      // called when data is received from the remote peer
-      conn.on("data", (data) => {
-        handleData(data, players.PLAYER_X.SYMBOL);
-      });
-    });
-  };
-
   const classes = useStyles();
 
   return (
     <>
-      <Dialog open={connDialog} onClose={() => setConnDialog(false)}>
-        <DialogTitle>Connect to peer</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Enter the ID of the user your wish to connect with.
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="ID"
-            fullWidth
-            onChange={(e) => setConnId(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConnDialog(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={connect} color="primary">
-            Connect
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog open={shareDialog} onClose={() => setShareDialog(false)}>
-        <DialogTitle>Share</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Share this ID with anyone you want to connect with.
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="ID"
-            fullWidth
-            value={player.id}
-            InputProps={{
-              readOnly: true,
-            }}
-            inputRef={shareInput}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShareDialog(false)} color="primary">
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              shareInput.current.select();
-              document.execCommand("copy");
-              setShareDialog(false);
-            }}
-            color="primary"
-          >
-            Copy
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog open={rematchDialog} onClose={() => setRematchDialog(false)}>
-        <DialogTitle>Rematch?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Would you like to rematch? You have
-            {" "}
-            {rematchState.time}
-            {" "}
-            seconds to accept.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              handlePlayerRematchAccept();
-            }}
-            color="primary"
-          >
-            Yes
-          </Button>
-          <Button
-            onClick={() => {
-              handlePlayerRematchReject();
-            }}
-            color="primary"
-          >
-            No
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog
-        open={rematchRejectDialog}
-        onClose={() => setRematchRejectDialog(false)}
+      <GameProvider values={{ connectDialog, handleConnect }}>
+        <Connect />
+      </GameProvider>
+      <GameProvider values={{ shareDialog, player }}>
+        <Share />
+      </GameProvider>
+      <GameProvider values={{
+        rematchDialog,
+        rematchState,
+        handlePlayerRematchAccept,
+        handlePlayerRematchReject,
+      }}
       >
-        <DialogContent>
-          <DialogContentText>
-            Your opponent rejected the rematch.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRematchRejectDialog(false)} color="primary">
-            Ok
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Backdrop className={classes.backdrop} open={rematchBackdrop}>
+        <Rematch />
+      </GameProvider>
+      <GameProvider values={{ rejectDialog }}>
+        <Reject />
+      </GameProvider>
+      <Backdrop className={classes.backdrop} open={loading}>
         <CircularProgress color="inherit" />
       </Backdrop>
       <Grid
@@ -608,7 +517,7 @@ const Game = () => {
               color="primary"
               startIcon={<PlayArrow />}
               onClick={() => {
-                setConnDialog(true);
+                setConnectDialog(true);
               }}
               disabled={state !== states.NOT_CONNECTED}
             >
