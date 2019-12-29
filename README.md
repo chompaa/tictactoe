@@ -4,7 +4,7 @@
 
 <p align=center>
   <a href="https://chompa.me">
-    <img src="game.gif" title="chompa.me" height="auto">
+    <img src="https://user-images.githubusercontent.com/26204416/71552691-800aac00-29f9-11ea-96d0-1ff07ebb9877.gif" title="chompa.me" height="auto">
   </a>
 </p>
 
