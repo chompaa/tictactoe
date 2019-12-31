@@ -4,10 +4,30 @@
 
 <p align=center>
   <a href="https://chompa.me">
-    <img src="game.gif" title="chompa.me" height="auto">
+    <img src="https://user-images.githubusercontent.com/26204416/71552691-800aac00-29f9-11ea-96d0-1ff07ebb9877.gif" title="chompa.me" height="auto">
   </a>
 </p>
 
-## Play
+## Docker
 
-Can be played at https://chompa.me.
+This app can be run using docker-compose.
+
+### Preqrequisities
+
+In order to run this container you'll need docker installed.
+
+* [Windows](https://docs.docker.com/windows/started)
+* [OS X](https://docs.docker.com/mac/started/)
+* [Linux](https://docs.docker.com/linux/started/)
+
+### Usage
+
+Run the following in your terminal once docker is installed:
+
+```docker-compose up```
+
+## Want to play?
+
+This app is currently hosted on my personal website:
+
+https://chompa.me
