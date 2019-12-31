@@ -8,6 +8,26 @@
   </a>
 </p>
 
-## Play
+## Docker
 
-Can be played at https://chompa.me.
+This app can be run using docker-compose.
+
+### Preqrequisities
+
+In order to run this container you'll need docker installed.
+
+* [Windows](https://docs.docker.com/windows/started)
+* [OS X](https://docs.docker.com/mac/started/)
+* [Linux](https://docs.docker.com/linux/started/)
+
+### Usage
+
+Run the following in your terminal once docker is installed:
+
+```docker-compose up```
+
+## Want to play?
+
+This app is currently hosted on my personal website:
+
+```https://chompa.me```
