@@ -30,4 +30,4 @@ Run the following in your terminal once docker is installed:
 
 This app is currently hosted on my personal website:
 
-```https://chompa.me```
+https://chompa.me
