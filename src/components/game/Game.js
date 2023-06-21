@@ -186,7 +186,7 @@ const Game = () => {
 
     // let our opponent know we've declined
     player.conn.send(rematchData.REMATCH_REJECT);
-  }, [player.conn, rematchData.REMATCH_REJECT]);
+  }, [player, rematchData.REMATCH_REJECT]);
 
   /**
    * Handles the opponent accepting a rematch
