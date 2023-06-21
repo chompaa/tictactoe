@@ -1,25 +1,11 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
-import {
-  Paper,
-  Button,
-  Grid,
-  Backdrop,
-  CircularProgress,
-} from "@material-ui/core";
-import { PlayArrow, FileCopy } from "@material-ui/icons";
+import React, { useState, useEffect, useCallback } from "react";
+import { Button, Grid, Backdrop, CircularProgress } from "@mui/material";
+import { PlayArrow, FileCopy } from "@mui/icons-material/";
 import Peer from "peerjs";
-import useStyles from "./Styles";
 import { GameProvider } from "./GameContext";
 import Board from "../Board";
 import Status from "../Status";
-import Connect from "../dialogs/Connect";
-import Share from "../dialogs/Share";
-import Rematch from "../dialogs/Rematch";
-import Reject from "../dialogs/Reject";
+import { Connect, Share, Rematch, Reject } from "../dialog";
 
 const Game = () => {
   /**
@@ -39,7 +25,7 @@ const Game = () => {
     REMATCH_ACCEPT: "REMATCH ACCEPT",
     REMATCH_REJECT: "REMATCH REJECT",
     REMATCH_DELAY: 2000,
-    REMATCH_TIMEOUT: 10,
+    REMATCH_TIMEOUT: 9,
   };
 
   /**
@@ -47,17 +33,16 @@ const Game = () => {
    */
   const [state, setState] = useState(states.NOT_CONNECTED);
   const [player, setPlayer] = useState({
-    // will assign a new ID if there's no ID in local storage
-    peer: new Peer(localStorage.getItem("ID")),
+    peer: new Peer(),
   });
   const [players] = useState({
     PLAYER_X: {
       SYMBOL: "X",
-      COLOUR: "#673AB7",
+      COLOUR: "#f8a400",
     },
     PLAYER_O: {
       SYMBOL: "O",
-      COLOUR: "#9C27B0",
+      COLOUR: "#99c96f",
     },
   });
   const [squares, setSquares] = useState(Array.from({ length: 9 }));
@@ -116,51 +101,50 @@ const Game = () => {
    * @param {Array}   line    Winning line
    * @param {Object}  winner  Winning player object
    */
-  const handleWin = useCallback((line, winner) => {
-    setState(states.WIN);
+  const handleWin = useCallback(
+    (line, winner) => {
+      setState(states.WIN);
 
-    setPlayer((p) => ({
-      ...p,
-      // check if the player has won
-      winner: p.symbol === winner.SYMBOL,
-    }));
+      setPlayer((p) => ({
+        ...p,
+        // check if the player has won
+        winner: p.symbol === winner.SYMBOL,
+      }));
 
-    let draw;
+      let draw;
 
-    // check whether we have a horizontal, vertical or diagonal line
-    if ((line[1] - line[0]) === 1) {
-      // horizontal
-      draw = `M4,${Math.round((64 / 3) * (((line[0] * 2) / 3) + 1))}
-        L124,${Math.round((64 / 3) * (((line[0] * 2) / 3) + 1))}`;
-    } else if ((line[1] - line[0]) === 3) {
-      // vertical
-      draw = `M${Math.round((64 / 3) * ((line[0] * 2) + 1))},
-        4L${Math.round((64 / 3) * ((line[0] * 2) + 1))},124`;
-    } else if (line[0] === 0) {
-      // top left to bottom right
-      draw = "M4,4L124,124";
-    } else {
-      // top right to bottom left
-      draw = "M124,4L4,124";
-    }
+      // check whether we have a horizontal, vertical or diagonal line
+      if (line[1] - line[0] === 1) {
+        // horizontal
+        draw = `M4,${Math.round((64 / 3) * ((line[0] * 2) / 3 + 1))}
+        L124,${Math.round((64 / 3) * ((line[0] * 2) / 3 + 1))}`;
+      } else if (line[1] - line[0] === 3) {
+        // vertical
+        draw = `M${Math.round((64 / 3) * (line[0] * 2 + 1))},
+        4L${Math.round((64 / 3) * (line[0] * 2 + 1))},124`;
+      } else if (line[0] === 0) {
+        // top left to bottom right
+        draw = "M4,4L124,124";
+      } else {
+        // top right to bottom left
+        draw = "M124,4L4,124";
+      }
 
-    // draw the win line onto the screen
-    setWinLine((w) => ({
-      ...w,
-      draw,
-      style: {
-        stroke: winner.COLOUR,
-        strokeDashoffset: 0,
-      },
-    }));
+      // draw the win line onto the screen
+      setWinLine((w) => ({
+        ...w,
+        draw,
+        style: {
+          stroke: winner.COLOUR,
+          strokeDashoffset: 0,
+        },
+      }));
 
-    // prompt a rematch after rematch.REMATCH_DELAY ms
-    setTimeout(() => handleRematch(), rematchData.REMATCH_DELAY);
-  }, [
-    states.WIN,
-    handleRematch,
-    rematchData.REMATCH_DELAY,
-  ]);
+      // prompt a rematch after rematch.REMATCH_DELAY ms
+      setTimeout(() => handleRematch(), rematchData.REMATCH_DELAY);
+    },
+    [states.WIN, handleRematch, rematchData.REMATCH_DELAY]
+  );
 
   /**
    * Handles the player accepting a rematch
@@ -175,6 +159,10 @@ const Game = () => {
       ...r,
       playerStatus: true,
     }));
+
+    if (!player || !player.conn) {
+      return;
+    }
 
     // let our opponent know we've accepted
     player.conn.send(rematchData.REMATCH_ACCEPT);
@@ -191,6 +179,10 @@ const Game = () => {
       ...r,
       playerStatus: false,
     }));
+
+    if (!player || !player.conn) {
+      return;
+    }
 
     // let our opponent know we've declined
     player.conn.send(rematchData.REMATCH_REJECT);
@@ -231,10 +223,12 @@ const Game = () => {
    * @param  {String}   symbol  Move symbol
    */
   const handleMove = (index, symbol) => {
-    setSquares((s) => s.map(
-      // map the square value to symbol if we're at index
-      (sValue, sIndex) => (sIndex === index ? symbol : sValue),
-    ));
+    setSquares((s) =>
+      s.map(
+        // map the square value to symbol if we're at index
+        (sValue, sIndex) => (sIndex === index ? symbol : sValue)
+      )
+    );
   };
 
   /**
@@ -243,7 +237,11 @@ const Game = () => {
    */
   const handleClick = (index) => {
     // stop if it's not the player's turn, the square is filled, or we aren't connected
-    if (move !== player.symbol || squares[index] || state !== states.CONNECTED) {
+    if (
+      move !== player.symbol ||
+      squares[index] ||
+      state !== states.CONNECTED
+    ) {
       return;
     }
 
@@ -273,19 +271,21 @@ const Game = () => {
       handleOpponentRematchReject,
       rematchData.REMATCH_ACCEPT,
       rematchData.REMATCH_REJECT,
-    ],
+    ]
   );
 
   /**
    * Handles connecting to a remote peer
-  */
+   */
   const handleConnect = (id) => {
     // hide the connect dialog
     setConnectDialog(false);
 
     // stop if we're already connected to a remote peer, or we're trying to
     // connect to ourselves
-    if (player.conn || id === player.id) return;
+    if (player.conn || id === player.id) {
+      return;
+    }
 
     // connect to the remote peer
     const conn = player.peer.connect(id);
@@ -305,9 +305,17 @@ const Game = () => {
     });
   };
 
+  const handleShareDialogClose = () => {
+    setShareDialog(false);
+  };
+
+  const handleConnectDialogClose = () => {
+    setConnectDialog(false);
+  };
+
   /**
    * Sets listeners for peer events on component mount
-  */
+   */
   useEffect(() => {
     // called when a connection to the PeerServer is established
     player.peer.on("open", (id) => {
@@ -343,7 +351,7 @@ const Game = () => {
   /**
    * Checks for a win line or draw and updates the current move every time a
    * square has changed
-  */
+   */
   useEffect(() => {
     [
       [0, 1, 2],
@@ -356,13 +364,16 @@ const Game = () => {
       [2, 4, 6],
     ].forEach((index) => {
       if (
-        squares[index[0]]
-        && squares[index[0]] === squares[index[1]]
-        && squares[index[0]] === squares[index[2]]
+        squares[index[0]] &&
+        squares[index[0]] === squares[index[1]] &&
+        squares[index[0]] === squares[index[2]]
       ) {
-        handleWin(index, squares[index[0]] === players.PLAYER_X.SYMBOL
-          ? players.PLAYER_X
-          : players.PLAYER_O);
+        handleWin(
+          index,
+          squares[index[0]] === players.PLAYER_X.SYMBOL
+            ? players.PLAYER_X
+            : players.PLAYER_O
+        );
       }
     });
 
@@ -372,10 +383,11 @@ const Game = () => {
       return;
     }
 
-    setMove((m) => (m === players.PLAYER_X.SYMBOL
-      ? players.PLAYER_O.SYMBOL
-      : players.PLAYER_X.SYMBOL
-    ));
+    setMove((m) =>
+      m === players.PLAYER_X.SYMBOL
+        ? players.PLAYER_O.SYMBOL
+        : players.PLAYER_X.SYMBOL
+    );
   }, [
     squares,
     states.WIN,
@@ -388,22 +400,27 @@ const Game = () => {
 
   /**
    * Handles the rematch timeout
-  */
+   */
   useEffect(() => {
     // only countdown if we haven't done anything and our opponent hasn't declined
-    if (rematchState.playerStatus === null
-      && rematchState.opponentStatus !== false
-      && rematchState.count) {
+    if (
+      rematchState.playerStatus === null &&
+      rematchState.opponentStatus !== false &&
+      rematchState.count
+    ) {
       // check if the countdown is finished
       if (rematchState.time === 0) {
         handlePlayerRematchReject();
         // otherwise, keep counting down
       } else if (rematchState.time !== 0) {
-        setTimeout(() => setRematchState((r) => ({
-          ...r,
-          time: rematchState.time - 1,
-        })),
-        1000);
+        setTimeout(
+          () =>
+            setRematchState((r) => ({
+              ...r,
+              time: rematchState.time - 1,
+            })),
+          1000
+        );
       }
     }
   }, [
@@ -416,7 +433,7 @@ const Game = () => {
 
   /**
    * Checks if both players agreed to a rematch and calls handleGameReset
-  */
+   */
   useEffect(() => {
     if (rematchState.playerStatus && rematchState.opponentStatus) {
       setLoading(false);
@@ -429,55 +446,91 @@ const Game = () => {
     handleGameReset,
   ]);
 
-  const classes = useStyles();
+  // const classes = useStyles();
 
   return (
     <>
-      <GameProvider values={{ connectDialog, handleConnect }}>
+      <GameProvider
+        values={{ connectDialog, handleConnectDialogClose, handleConnect }}
+      >
         <Connect />
       </GameProvider>
-      <GameProvider values={{ shareDialog, player }}>
+      <GameProvider values={{ shareDialog, handleShareDialogClose, player }}>
         <Share />
       </GameProvider>
-      <GameProvider values={{
-        rematchDialog,
-        rematchState,
-        handlePlayerRematchAccept,
-        handlePlayerRematchReject,
-      }}
+      <GameProvider
+        values={{
+          rematchDialog,
+          rematchState,
+          handlePlayerRematchAccept,
+          handlePlayerRematchReject,
+        }}
       >
         <Rematch />
       </GameProvider>
       <GameProvider values={{ rejectDialog }}>
         <Reject />
       </GameProvider>
-      <Backdrop className={classes.backdrop} open={loading}>
+      <Backdrop
+        sx={{ width: 1, m: 0, zIndex: 10, color: "text.primary" }}
+        open={loading}
+      >
         <CircularProgress color="inherit" />
       </Backdrop>
       <Grid
-        className={classes.gridContainer}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 1,
+          gap: 5,
+          m: 0,
+        }}
         container
-        direction="column"
-        spacing={5}
       >
         <Grid item>
-          <Grid container justify="center">
-            <GameProvider values={{
-              states, state, player, move,
+          <Grid
+            container
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
+          >
+            <GameProvider
+              values={{
+                states,
+                state,
+                player,
+                move,
+              }}
             >
               <Status />
             </GameProvider>
           </Grid>
         </Grid>
         <Grid
-          className={classes.boardContainer}
           container
-          direction="row"
-          justify="center"
-          alignItems="center"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+          }}
         >
-          <Paper className={classes.board}>
+          <Grid
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 498,
+              height: 498,
+              background: "121212",
+              margin: 0,
+              padding: 0,
+            }}
+          >
             <svg
               pointerEvents="none"
               role="img"
@@ -498,24 +551,30 @@ const Game = () => {
             </svg>
             <GameProvider
               values={{
-                squares, players, handleClick,
+                squares,
+                players,
+                handleClick,
               }}
             >
               <Board />
             </GameProvider>
-          </Paper>
+          </Grid>
         </Grid>
         <Grid
-          className={classes.gridContainer}
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 6,
+            width: 1,
+            m: 0,
+          }}
           container
-          direction="row"
-          justify="center"
-          alignItems="center"
-          spacing={6}
         >
           <Grid item>
             <Button
-              className={classes.button}
+              sx={{ width: 128 }}
               variant="contained"
               color="primary"
               startIcon={<PlayArrow />}
@@ -529,9 +588,9 @@ const Game = () => {
           </Grid>
           <Grid item>
             <Button
-              className={classes.button}
-              variant="contained"
+              sx={{ width: 128 }}
               color="primary"
+              variant="contained"
               startIcon={<FileCopy />}
               onClick={() => {
                 setShareDialog(true);

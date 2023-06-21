@@ -1,18 +1,14 @@
-import React, {
-  useState,
-  useContext,
-  useEffect,
-} from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogContentText,
   DialogActions,
   Button,
-} from "@material-ui/core";
+} from "@mui/material";
 import { GameContext } from "../game/GameContext";
 
-const Rematch = () => {
+export const Reject = () => {
   const [active, setActive] = useState(false);
   const { rejectDialog } = useContext(GameContext);
 
@@ -21,10 +17,7 @@ const Rematch = () => {
   }, [rejectDialog]);
 
   return (
-    <Dialog
-      open={active}
-      onClose={() => setActive(false)}
-    >
+    <Dialog open={active} onClose={() => setActive(false)}>
       <DialogContent>
         <DialogContentText>
           Your opponent rejected the rematch.
@@ -38,5 +31,3 @@ const Rematch = () => {
     </Dialog>
   );
 };
-
-export default Rematch;

@@ -4,9 +4,7 @@ import { PropTypes } from "prop-types";
 export const GameContext = createContext();
 
 export const GameProvider = ({ children, values }) => (
-  <GameContext.Provider value={values}>
-    {children}
-  </GameContext.Provider>
+  <GameContext.Provider value={values}>{children}</GameContext.Provider>
 );
 
 GameProvider.propTypes = {
@@ -21,7 +19,9 @@ GameProvider.propTypes = {
     move: PropTypes.string,
     connectDialog: PropTypes.bool,
     handleConnect: PropTypes.func,
+    handleConnectDialogClose: PropTypes.func,
     shareDialog: PropTypes.bool,
+    shareDialogClose: PropTypes.func,
     rematchDialog: PropTypes.bool,
     rematchState: PropTypes.object,
     handlePlayerRematchAccept: PropTypes.func,

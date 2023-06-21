@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useContext,
-  useRef,
-  useEffect,
-} from "react";
+import React, { useState, useContext, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -12,23 +7,19 @@ import {
   DialogActions,
   TextField,
   Button,
-} from "@material-ui/core";
+} from "@mui/material";
 import { GameContext } from "../game/GameContext";
 
-const Connect = () => {
-  const [active, setActive] = useState(false);
-  const { connectDialog, handleConnect } = useContext(GameContext);
+export const Connect = () => {
+  const { connectDialog, handleConnectDialogClose, handleConnect } =
+    useContext(GameContext);
   const input = useRef();
 
-  useEffect(() => {
-    setActive(connectDialog);
-  }, [connectDialog]);
-
   return (
-    <Dialog open={active} onClose={() => setActive(false)}>
+    <Dialog open={connectDialog} onClose={() => handleConnectDialogClose()}>
       <DialogTitle>Connect to peer</DialogTitle>
       <DialogContent>
-        <DialogContentText>
+        <DialogContentText sx={{ pb: 2 }}>
           Enter the ID of the user your wish to connect with.
         </DialogContentText>
         <TextField
@@ -40,15 +31,16 @@ const Connect = () => {
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => setActive(false)} color="primary">
+        <Button onClick={() => handleConnectDialogClose()} color="primary">
           Cancel
         </Button>
-        <Button onClick={() => handleConnect(input.current.value)} color="primary">
+        <Button
+          onClick={() => handleConnect(input.current.value)}
+          color="primary"
+        >
           Connect
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
-
-export default Connect;

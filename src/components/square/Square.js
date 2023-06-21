@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
-import { Zoom } from "@material-ui/core";
-import useStyles from "../game/Styles";
+import { Zoom } from "@mui/material";
+// import useStyles from "../game/Styles";
 import { GameContext } from "../game/GameContext";
 import { SquareContext } from "./SquareContext";
 
@@ -8,7 +8,7 @@ const Square = () => {
   const { players, handleClick } = useContext(GameContext);
   const { value, index, border } = useContext(SquareContext);
 
-  const classes = useStyles();
+  // const classes = useStyles();
 
   return (
     <td role="gridcell" className={border} onClick={() => handleClick(index)}>
@@ -18,7 +18,7 @@ const Square = () => {
             return (
               <Zoom in timeout={500}>
                 <svg
-                  className={classes.squareSvg}
+                  sx={{ width: 1, height: 1 }}
                   role="img"
                   viewBox="0 0 128 128"
                 >
@@ -43,7 +43,7 @@ const Square = () => {
             return (
               <Zoom in timeout={500}>
                 <svg
-                  className={classes.squareSvg}
+                  sx={{ width: 1, height: 1 }}
                   role="img"
                   viewBox="0 0 128 128"
                   style={{

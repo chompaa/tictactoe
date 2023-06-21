@@ -1,8 +1,4 @@
-import React, {
-  useState,
-  useContext,
-  useEffect,
-} from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -10,10 +6,10 @@ import {
   DialogContentText,
   DialogActions,
   Button,
-} from "@material-ui/core";
+} from "@mui/material";
 import { GameContext } from "../game/GameContext";
 
-const Rematch = () => {
+export const Rematch = () => {
   const [active, setActive] = useState(false);
   const {
     rematchDialog,
@@ -31,11 +27,8 @@ const Rematch = () => {
       <DialogTitle>Rematch?</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          Would you like to rematch? You have
-          {" "}
-          {rematchState.time}
-          {" "}
-          seconds to accept.
+          Would you like to rematch? You have {rematchState.time} seconds to
+          accept.
         </DialogContentText>
       </DialogContent>
       <DialogActions>
@@ -59,5 +52,3 @@ const Rematch = () => {
     </Dialog>
   );
 };
-
-export default Rematch;
