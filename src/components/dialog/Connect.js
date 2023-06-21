@@ -1,4 +1,4 @@
-import React, { useState, useContext, useRef, useEffect } from "react";
+import React, { useContext, useRef } from "react";
 import {
   Dialog,
   DialogTitle,
